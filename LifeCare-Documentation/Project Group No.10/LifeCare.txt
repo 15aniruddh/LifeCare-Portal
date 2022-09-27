@@ -1,0 +1,18 @@
+PGDAC Project Entry on PMS on 13 September 2022 from 03 PM to 03:30 PM. 
+
+Dear Students,
+
+Kindly be prepared with the below data - 
+
+Project Title - LifeCare
+
+Project Duration - 01 Months
+
+Technology used - React.js (FrontEnd), SpringBoot (BackEnd) and MySQL (Database)
+
+Project Description - LifeCare aims at to provide easy access to all the aspects of management and operations of Hospital. We have taken the inspiration of the project from the last years Corona Pandemic. So, in the near future a situation like Corona comes again into human life, at that time LifeCare will help the people a lot in the procedure of finding facilities. The main purpose of LifeCare is to make Hospital related task easy and saves the time of public while searching health care facilities. LifeCare helps to maintains the details of Hospital related queries like Oxygen availability, Bed availability, etc. With the help of LifeCare people can get the information of nearby Hospital location from wherever they are.
+(No special characters to be used)
+
+Link - actspms.in (use your full roll number and the password)
+
+All the best!
