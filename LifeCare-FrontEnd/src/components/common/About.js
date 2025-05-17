@@ -1,9 +1,9 @@
 import React from "react";
 import "./About.css";
-import aniruddh from "../images/team1.png";
-import shubham from "../images/team2.png";
-import omkar from "../images/team3.png";
-import vaibhav from "../images/team4.png";
+import aniruddh from "../images/team1.webp";
+import shubham from "../images/team2.webp";
+import omkar from "../images/team3.webp";
+import vaibhav from "../images/team4.webp";
 
 export default function About() {
   return (

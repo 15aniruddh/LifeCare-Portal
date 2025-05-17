@@ -3,21 +3,21 @@ import { Button } from "react-bootstrap";
 import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
 import UserServiceApi from "../service/UserServiceApi";
-import { useNavigate} from "react-router";
+import { useNavigate } from "react-router";
 
-export default function Usersignup(){
-  const navigate=useNavigate();
+export default function Usersignup() {
+  const navigate = useNavigate();
 
-  const[name,setName]=useState("");
-  const[email,setEmail]=useState("");
-  const[password,setPassword]=useState("");
-  const[contact,setContact]=useState("");
-  const[address,setAddress]=useState("");
-  const[gender,setgender]=useState("");
-  const[age,setAge]=useState("");
-  const[message,setMessage]=useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [contact, setContact] = useState("");
+  const [address, setAddress] = useState("");
+  const [gender, setgender] = useState("");
+  const [age, setAge] = useState("");
+  const [message, setMessage] = useState("");
 
- const validateName=()=> {
+  const validateName = () => {
     let name = document.getElementById("name").value;
     var regexname = /^[a-zA-Z]+ [a-zA-Z]+$/;
     if (regexname.test(name) === true) {
@@ -28,9 +28,9 @@ export default function Usersignup(){
         "Name must be in Alphabets !!!";
     }
   }
-  
- const validatePassword=()=> {
-  let password = document.getElementById("pwd").value;
+
+  const validatePassword = () => {
+    let password = document.getElementById("pwd").value;
     var regexPassword = /^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z]).{5,}$/;
 
     if (regexPassword.test(password) === true) {
@@ -42,7 +42,7 @@ export default function Usersignup(){
     }
   }
 
-  const validateEmail=()=> {
+  const validateEmail = () => {
     let email = document.getElementById("email").value;
 
     var regexEmail = /\S+@\S+\.\S+/;
@@ -55,7 +55,7 @@ export default function Usersignup(){
     }
   }
 
-  const validateMobileNumber=()=> {
+  const validateMobileNumber = () => {
     let number = document.getElementById("contact").value;
     var regexMobile = /^\d{10}$/;
     if (regexMobile.test(number)) {
@@ -68,14 +68,14 @@ export default function Usersignup(){
     }
   }
 
- const removeWarnings=()=> {
+  const removeWarnings = () => {
     document.getElementById("nameVr").innerHTML = "";
     document.getElementById("passwordVr").innerHTML = "";
     document.getElementById("emailVr").innerHTML = "";
     document.getElementById("contactVr").innerHTML = "";
   }
 
- const signUp = (e) => {
+  const signUp = (e) => {
     if (
       name === "" ||
       email === "" ||
@@ -133,11 +133,11 @@ export default function Usersignup(){
     e.preventDefault();
     let user = {
       name: name,
-      email:email,
+      email: email,
       password: password,
       contact: contact,
-      address:address,
-      gender:gender,
+      address: address,
+      gender: gender,
       age: age,
     };
 
@@ -164,215 +164,159 @@ export default function Usersignup(){
   };
 
 
-    return (
-      <>
-      <div className="container">
-        <div className="container signup row justify-content-center">
-          <div
-            className="col-sm-8 overflow-hidden border border-primary rounded"
-            style={{ backgroundColor: "rgba(255,255,255,0.6)" }}>
-            <div className="row py-3">
-              <div className="col-sm-8">
-                <br />
-                <h2 className="text-dark offset-5">User Registration</h2>
-              </div>
-              <div className="col-sm-3">
-                <br />
-                <Link className="btn btn-dark offset-9 fw-bold" to="/">
-                  Back
-                </Link>
-              </div>
-            </div>
-            <form className="mb-5">
-              <div className="form-group row my-3 justify-content-center">
-                <label htmlFor="name" className="col-2 col-form-label fw-bold">
-                  Name
-                </label>
-                <div className="col-5">
-                  <input
-                    type="text"
-                    id="name"
-                    className="form-control"
-                    placeholder="Enter your Full Name here !!!"
-                    name="name"
-                    value={name}
-                    onChange={(e)=>{setName(e.target.value)}}
-                    onFocus={()=>{removeWarnings()}}
-                    onBlur={()=>{validateName()}}
-                    required
-                  />
-                  <p
-                    className="text-center mt-3"
-                    style={{ color: "red" }}
-                    id="nameVr"
-                  ></p>
-                </div>
-              </div>
-              <div className="form-group row my-3 justify-content-center">
-                <label htmlFor="email" className="col-2 col-form-label fw-bold">
-                  Email
-                </label>
-                <div className="col-5">
-                  <input
-                    type="email"
-                    id="email"
-                    className="form-control"
-                    placeholder="abc@xyz.com"
-                    name="email"
-                    value={email}
-                    onChange={(e)=>{setEmail(e.target.value)}}
-                    onFocus={()=>{removeWarnings()}}
-                    onBlur={()=>{validateEmail()}}
-                    required
-                  />
-                  <p
-                    className="text-center mt-3"
-                    style={{ color: "red" }}
-                    id="emailVr"
-                  ></p>
-                </div>
-              </div>
-              <div className="form-group row my-3 justify-content-center">
-                <label htmlFor="pwd" className="col-2 col-form-label fw-bold">
-                  Password
-                </label>
-                <div className="col-5">
-                  <input
-                    type="password"
-                    id="pwd"
-                    className="form-control"
-                    placeholder="Enter your Password here !!!"
-                    name="password"
-                    value={password}
-                    onChange={(e)=>{setPassword(e.target.value)}}
-                    onFocus={()=>{removeWarnings()}}
-                    onBlur={()=>{validatePassword()}}
-                    required
-                  />
-                  <p
-                    className="text-center mt-3"
-                    style={{ color: "red" }}
-                    id="passwordVr"
-                  ></p>
-                </div>
-              </div>
-              <div className="form-group row my-3 justify-content-center">
-                <label className="col-2 col-form-label fw-bold">Gender</label>
-                <div className="col-5 d-flex justify-content-between pt-2">
-                  <div className="fw-bold">
+return (
+  <div className="container py-5">
+    <div className="row justify-content-center">
+      <div className="col-lg-8">
+        <div className="card shadow-lg border-0 rounded-lg">
+          <div className="card-header bg-primary text-white position-relative">
+            <h2 className="my-2 text-center">User Registration</h2>
+            <Link to="/" className="btn btn-light btn-sm position-absolute top-0 end-0 m-2">
+              <i className="bi bi-arrow-left"></i> Back
+            </Link>
+          </div>
+          <div className="card-body p-5">
+            <form>
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="name" className="form-label fw-bold">Name</label>
                     <input
-                      type="radio"
-                      id="MALE"
-                      name="gender"
-                      value="MALE"
-                      onChange={(e)=>{setgender(e.target.value)}}
+                      type="text"
+                      id="name"
+                      className="form-control"
+                      placeholder="Enter your Full Name"
+                      name="name"
+                      value={name}
+                      onChange={(e) => { setName(e.target.value) }}
+                      onFocus={() => { removeWarnings() }}
+                      onBlur={() => { validateName() }}
+                      required
                     />
-                    &nbsp;&nbsp;Male
+                    <p className="text-danger mt-1 small" id="nameVr"></p>
                   </div>
-                  <div className="fw-bold">
+
+                  <div className="mb-3">
+                    <label htmlFor="email" className="form-label fw-bold">Email</label>
                     <input
-                      type="radio"
-                      id="FEMALE"
-                      name="gender"
-                      value="FEMALE"
-                      onChange={(e)=>{setgender(e.target.value)}}
+                      type="email"
+                      id="email"
+                      className="form-control"
+                      placeholder="abc@xyz.com"
+                      name="email"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value) }}
+                      onFocus={() => { removeWarnings() }}
+                      onBlur={() => { validateEmail() }}
+                      required
                     />
-                    &nbsp;&nbsp;Female
+                    <p className="text-danger mt-1 small" id="emailVr"></p>
                   </div>
-                  <div className="fw-bold">
+
+                  <div className="mb-3">
+                    <label htmlFor="pwd" className="form-label fw-bold">Password</label>
                     <input
-                      type="radio"
-                      id="OTHER"
-                      name="gender"
-                      value="OTHER"
-                      onChange={(e)=>{setgender(e.target.value)}}
+                      type="password"
+                      id="pwd"
+                      className="form-control"
+                      placeholder="Enter your Password"
+                      name="password"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value) }}
+                      onFocus={() => { removeWarnings() }}
+                      onBlur={() => { validatePassword() }}
+                      required
                     />
-                    &nbsp;&nbsp;Other
+                    <p className="text-danger mt-1 small" id="passwordVr"></p>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Gender</label>
+                    <div className="d-flex gap-3">
+                      {['MALE', 'FEMALE', 'OTHER'].map((genderOption) => (
+                        <div key={genderOption} className="form-check">
+                          <input
+                            className="form-check-input"
+                            type="radio"
+                            id={genderOption}
+                            name="gender"
+                            value={genderOption}
+                            checked={gender === genderOption}
+                            onChange={(e) => { setgender(e.target.value) }}
+                          />
+                          <label className="form-check-label" htmlFor={genderOption}>
+                            {genderOption.charAt(0) + genderOption.slice(1).toLowerCase()}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="form-group row my-3 justify-content-center">
-                <label
-                  htmlFor="contact"
-                  className="col-2 col-form-label fw-bold"
-                >
-                  Contact
-                </label>
-                <div className="col-5">
-                  <input
-                    type="phone"
-                    id="contact"
-                    className="form-control"
-                    placeholder="Enter your Contact details here !!!"
-                    name="contact"
-                    value={contact}
-                    pattern="[0-9]{1}-[0-9]{5}-[0-9]{4}"
-                    onChange={(e)=>{setContact(e.target.value)}}
-                    onFocus={()=>{removeWarnings()}}
-                    onBlur={()=>{validateMobileNumber()}}
-                    required
-                  />
-                  <p
-                    className="text-center mt-3"
-                    id="contactVr"
-                    style={{ color: "red" }}
-                  ></p>
+
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label htmlFor="contact" className="form-label fw-bold">Contact</label>
+                    <input
+                      type="tel"
+                      id="contact"
+                      className="form-control"
+                      placeholder="Enter your Contact details"
+                      name="contact"
+                      value={contact}
+                      pattern="[0-9]{1}-[0-9]{5}-[0-9]{4}"
+                      onChange={(e) => { setContact(e.target.value) }}
+                      onFocus={() => { removeWarnings() }}
+                      onBlur={() => { validateMobileNumber() }}
+                      required
+                    />
+                    <p className="text-danger mt-1 small" id="contactVr"></p>
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="age" className="form-label fw-bold">Age</label>
+                    <input
+                      type="number"
+                      id="age"
+                      className="form-control"
+                      placeholder="Enter your Age"
+                      name="age"
+                      value={age}
+                      onChange={(e) => { setAge(e.target.value) }}
+                      required
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="address" className="form-label fw-bold">Address</label>
+                    <textarea
+                      rows="3"
+                      id="address"
+                      className="form-control"
+                      placeholder="Enter your Address"
+                      name="address"
+                      value={address}
+                      onChange={(e) => { setAddress(e.target.value) }}
+                      required
+                    ></textarea>
+                  </div>
                 </div>
               </div>
 
-              <div className="form-group row mt-3 justify-content-center">
-                <label htmlFor="age" className="col-2 col-form-label fw-bold">
-                  Age
-                </label>
-                <div className="col-5">
-                  <input
-                    type="number"
-                    id="age"
-                    className="form-control"
-                    placeholder="Enter your Age here !!!"
-                    name="age"
-                    value={age}
-                    onChange={(e)=>{setAge(e.target.value)}}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group row mt-3 justify-content-center">
-                <label
-                  htmlFor="address"
-                  className="col-2 col-form-label fw-bold"
+              <div className="d-grid mt-4">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg"
+                  onClick={(e) => { signUp(e) }}
                 >
-                  Address
-                </label>
-                <div className="col-5">
-                  <textarea
-                    rows="3"
-                    id="address"
-                    className="form-control"
-                    placeholder="Enter your Address here !!!"
-                    name="address"
-                    value={address}
-                    onChange={(e)=>{setAddress(e.target.value)}}
-                    required
-                  ></textarea>
-                </div>
-              </div>
-              <br />
-              <div className="form-group justify-content-center">
-                <div className="offset-5">
-                  <Button
-                    className="btn btn btn-primary mt-3 fw-bold"
-                    onClick={(e)=>{signUp(e)}}
-                  >
-                    Sign Up
-                  </Button>
-                </div>
+                  Sign Up
+                </button>
               </div>
             </form>
           </div>
         </div>
-        </div>
-      </>
-    );
-  }
+      </div>
+    </div>
+  </div>
+);
+}
+

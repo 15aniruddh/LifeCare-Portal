@@ -28,63 +28,63 @@
   color: #61dafb;
 }
 
-.hospitaldash{
+.hospitaldash {
   background-image: url("https://thumbs.dreamstime.com/b/medical-clinic-backdrop-banner-hospital-healthcare-conceptual-banner-background-87324356.jpg");
-         margin-left: 0%;
-         margin-top: 0%;
-         width : 100%;
-        min-height: 90vh;
-        background-repeat: no-repeat;
-        background-size: cover;      
-}
-
-.userdash{
-  background-image: url("https://images.unsplash.com/photo-1538108149393-fbbd81895907?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=928&q=80");
-         margin-left: 0%;
-         margin-top: 0%;
-         width : 100%;
-        min-height: 90vh;
-        background-repeat: no-repeat;
-        background-size: cover;   
-        opacity: 0.9;   
-}
-
-.admindash{
-  background-image: url("https://www.aimprosoft.com/wp-content/uploads/2020/06/How-to-Create-a-Hospital-Management-Software.png");         
-         margin-top: 0%;
-         width : 100%;
-        min-height: 85vh;
-        background-repeat: no-repeat;
-        background-size: cover;      
-}
-
-.signup{
-  background-image: url("https://www.med-technews.com/downloads/6942/download/digital.png?cb=d7dd1f5b0450b066d0dc87cbefe4550c&w=640");
-        margin : 0%;
-         width : 100%;
-        min-height: 85vh;
-        background-repeat: no-repeat;
-        background-size: cover;      
-}
-
-.login{
-  background-image: url("http://elixiraid.com/wp-content/uploads/2016/09/Hospital-Management-System-1.png");
-         margin-left: 0%;
-         margin-top: 0%;
-         width : 100%;
-        min-height: 90vh;
-        background-repeat: no-repeat;
-        background-size: cover;      
-}
-
-.homeban{
-   background-image: url("components/images/doctor.jpg");
   margin-left: 0%;
-         margin-top: 0%;
-         width : 100%;
-        min-height: 30%;
-        background-repeat: no-repeat;
-        background-size: cover;      
+  margin-top: 0%;
+  width: 100%;
+  min-height: 90vh;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.userdash {
+  background-image: url("https://images.unsplash.com/photo-1538108149393-fbbd81895907?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=928&q=80");
+  margin-left: 0%;
+  margin-top: 0%;
+  width: 100%;
+  min-height: 90vh;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0.9;
+}
+
+.admindash {
+  background-image: url("https://www.aimprosoft.com/wp-content/uploads/2020/06/How-to-Create-a-Hospital-Management-Software.png");
+  margin-top: 0%;
+  width: 100%;
+  min-height: 85vh;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.signup {
+  background-image: url("components/images/Doctor-wallpaper.png");
+  margin: 0%;
+  width: 100%;
+  min-height: 81vh;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.login {
+  background-image: url("http://elixiraid.com/wp-content/uploads/2016/09/Hospital-Management-System-1.png");
+  margin-left: 0%;
+  margin-top: 0%;
+  width: 100%;
+  min-height: 81vh;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.homeban {
+  background-image: url("components/images/doctor.webp");
+  margin-left: 0%;
+  margin-top: 0%;
+  width: 100%;
+  min-height: 30%;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .banner {
@@ -103,6 +103,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
