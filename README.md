@@ -2,7 +2,7 @@
 
 **Bridging the gap between patients and hospitals during critical times**  
 
-![Healthcare Hero Image](https://via.placeholder.com/800x400?text=LifeCare+Portal+Screenshot)
+![Healthcare Website Image](https://portfolio-15aniruddh.vercel.app/static/media/LifeCare-Portal.5a1ffc4aaae21f99e86d.png)
 
 ## 🌟 Inspiration
 Born from the challenges of the COVID-19 pandemic, LifeCare Portal revolutionizes how people access vital hospital resources. We eliminate the frantic search for medical facilities during emergencies, putting crucial information at your fingertips.
