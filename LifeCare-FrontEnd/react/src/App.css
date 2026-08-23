@@ -1,0 +1,726 @@
+/* ==========================================================================
+   Component styles — navbar, hero, feature panels, doctors, testimonial,
+   dashboards, auth, footer
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Navbar
+   -------------------------------------------------------------------------- */
+
+.lc-navbar {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--lc-line);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.lc-navbar .navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--lc-ink);
+  letter-spacing: -0.03em;
+  padding: 0;
+}
+
+.lc-navbar .navbar-brand:hover {
+  color: var(--lc-violet);
+}
+
+.lc-navbar .navbar-brand img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.lc-navbar .nav-link {
+  color: var(--lc-body);
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--lc-radius-pill);
+  white-space: nowrap;
+}
+
+.lc-navbar .nav-link:hover,
+.lc-navbar .nav-link:focus {
+  color: var(--lc-navy);
+  background: var(--lc-violet-soft);
+}
+
+.lc-navbar .nav-link.active {
+  color: var(--lc-navy);
+  background: var(--lc-violet-soft);
+}
+
+.lc-navbar .navbar-toggler {
+  border: 1px solid var(--lc-line-strong);
+  border-radius: var(--lc-radius-sm);
+  padding: 0.4rem 0.6rem;
+}
+
+.lc-navbar .navbar-toggler:focus {
+  box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.14);
+}
+
+/* Collapsed menu needs room to breathe on phones. */
+@media (max-width: 991.98px) {
+  .lc-navbar .navbar-collapse {
+    padding-top: 0.5rem;
+    margin-top: 0.75rem;
+    border-top: 1px solid var(--lc-line);
+  }
+
+  .lc-nav-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    padding-top: 0.85rem;
+  }
+
+  .lc-nav-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (min-width: 992px) {
+  .lc-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Hero
+   -------------------------------------------------------------------------- */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--lc-violet-softer) 0%,
+    var(--lc-canvas) 100%
+  );
+  padding: clamp(3rem, 2rem + 5vw, 6rem) 0 clamp(3rem, 2rem + 4vw, 5rem);
+}
+
+.hero::before {
+  /* Diffuse violet glow, echoing the reference's soft background wash. */
+  content: "";
+  position: absolute;
+  top: -30%;
+  right: -10%;
+  width: 55vw;
+  height: 55vw;
+  max-width: 700px;
+  max-height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(108, 92, 231, 0.18),
+    rgba(108, 92, 231, 0) 68%
+  );
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero h1 {
+  text-wrap: balance;
+  margin-bottom: 1.1rem;
+}
+
+.hero-lead {
+  font-size: clamp(1rem, 0.96rem + 0.3vw, 1.12rem);
+  color: var(--lc-body);
+  max-width: 34rem;
+  margin-bottom: 2rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.hero-media {
+  position: relative;
+  border-radius: var(--lc-radius-xl);
+  overflow: hidden;
+  box-shadow: var(--lc-shadow-lg);
+  background: var(--lc-sky);
+  aspect-ratio: 4 / 3;
+}
+
+.hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Floating stat card over the hero image, as in the reference. */
+.floating-card {
+  position: absolute;
+  background: var(--lc-surface);
+  border-radius: var(--lc-radius);
+  box-shadow: var(--lc-shadow-lg);
+  padding: 0.9rem 1.1rem;
+  max-width: 210px;
+}
+
+.floating-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--lc-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.floating-card-bottom-left {
+  left: clamp(0.75rem, 2vw, 1.5rem);
+  bottom: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* The floating cards are decorative; below md they crowd the image out. */
+@media (max-width: 767.98px) {
+  .floating-card {
+    display: none;
+  }
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.45rem;
+}
+
+.stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-row .stat-label {
+  color: var(--lc-body);
+  font-weight: 600;
+}
+
+.stat-row .stat-value {
+  color: var(--lc-violet);
+  font-weight: 700;
+}
+
+.stat-bar {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--lc-violet-soft);
+  overflow: hidden;
+  margin-top: 0.15rem;
+}
+
+.stat-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--lc-violet);
+}
+
+/* Trust strip under the hero copy. */
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1.5rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--lc-line);
+}
+
+.hero-stat-value {
+  display: block;
+  font-size: clamp(1.4rem, 1.2rem + 0.8vw, 1.85rem);
+  font-weight: 700;
+  color: var(--lc-ink);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.hero-stat-label {
+  font-size: 0.85rem;
+  color: var(--lc-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Split feature panel (text one side, image the other)
+   -------------------------------------------------------------------------- */
+
+.feature-panel {
+  background: var(--lc-panel);
+  border-radius: var(--lc-radius-xl);
+  padding: clamp(1.5rem, 1.1rem + 2vw, 3rem);
+}
+
+.feature-panel + .feature-panel {
+  margin-top: clamp(1.25rem, 1rem + 1vw, 2rem);
+}
+
+.feature-panel h2 {
+  text-wrap: balance;
+  margin-bottom: 1.5rem;
+}
+
+.feature-media {
+  position: relative;
+  border-radius: var(--lc-radius-lg);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--lc-sky);
+  box-shadow: var(--lc-shadow);
+}
+
+.feature-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
+   Doctors
+   -------------------------------------------------------------------------- */
+
+.doctor-card {
+  position: relative;
+  border-radius: var(--lc-radius-lg);
+  background: var(--lc-sky);
+  padding-top: 2rem;
+  /* Room for the name card that overlaps the bottom edge. */
+  padding-bottom: 3.5rem;
+  overflow: hidden;
+  transition: transform 0.18s ease;
+}
+
+.doctor-card:hover {
+  transform: translateY(-4px);
+}
+
+.doctor-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.doctor-name-card {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  background: var(--lc-surface);
+  border-radius: var(--lc-radius);
+  box-shadow: var(--lc-shadow-sm);
+  padding: 0.7rem 1rem;
+}
+
+.doctor-role {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--lc-muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.doctor-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--lc-ink);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+/* --------------------------------------------------------------------------
+   Testimonial
+   -------------------------------------------------------------------------- */
+
+.testimonial-panel {
+  background: var(--lc-violet);
+  border-radius: var(--lc-radius-xl);
+  padding: clamp(1.25rem, 1rem + 1.5vw, 2rem);
+  color: #fff;
+}
+
+.testimonial-media {
+  border-radius: var(--lc-radius-lg);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.testimonial-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.testimonial-quote {
+  font-size: clamp(1.02rem, 0.95rem + 0.4vw, 1.25rem);
+  line-height: 1.6;
+  color: #fff;
+  margin-bottom: 1.5rem;
+}
+
+.testimonial-author {
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.testimonial-author-role {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.btn-on-violet {
+  --bs-btn-color: var(--lc-violet);
+  --bs-btn-bg: #fff;
+  --bs-btn-border-color: #fff;
+  --bs-btn-hover-color: var(--lc-violet-dark);
+  --bs-btn-hover-bg: #f2f0ff;
+  --bs-btn-hover-border-color: #f2f0ff;
+}
+
+/* --------------------------------------------------------------------------
+   Call to action band
+   -------------------------------------------------------------------------- */
+
+.cta-panel {
+  background: var(--lc-navy);
+  border-radius: var(--lc-radius-xl);
+  padding: clamp(2rem, 1.5rem + 2.5vw, 3.5rem);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cta-panel h2 {
+  color: #fff;
+  text-wrap: balance;
+  margin-bottom: 0.75rem;
+}
+
+.cta-panel p {
+  max-width: 34rem;
+  margin: 0 auto 1.75rem;
+}
+
+/* --------------------------------------------------------------------------
+   Dashboards
+   -------------------------------------------------------------------------- */
+
+.dashboard-banner {
+  background: var(--lc-violet-softer);
+  border-bottom: 1px solid var(--lc-line);
+  padding: clamp(1.75rem, 1.3rem + 2vw, 2.75rem) 0;
+}
+
+.dashboard-banner h1 {
+  font-size: clamp(1.5rem, 1.25rem + 1.2vw, 2.1rem);
+  margin: 0;
+}
+
+.dashboard-banner p {
+  color: var(--lc-muted);
+  margin: 0.35rem 0 0;
+}
+
+/* Small summary tiles above the dashboard actions. */
+.stat-card {
+  border: 1px solid var(--lc-line);
+  border-radius: var(--lc-radius);
+  background: var(--lc-surface);
+  padding: 1.25rem;
+  height: 100%;
+}
+
+.stat-card .stat-card-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--lc-muted);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.stat-card .stat-card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--lc-ink);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+/* --------------------------------------------------------------------------
+   Auth pages
+   -------------------------------------------------------------------------- */
+
+.auth-shell {
+  display: flex;
+  align-items: center;
+  min-height: calc(100vh - 76px);
+  padding: clamp(2rem, 1.5rem + 2vw, 4rem) 0;
+  background: linear-gradient(
+    180deg,
+    var(--lc-violet-softer) 0%,
+    var(--lc-canvas) 100%
+  );
+}
+
+.auth-card {
+  border: 1px solid var(--lc-line);
+  border-radius: var(--lc-radius-xl);
+  background: var(--lc-surface);
+  box-shadow: var(--lc-shadow);
+  padding: clamp(1.5rem, 1.2rem + 1.5vw, 2.75rem);
+}
+
+.auth-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+
+.lc-footer {
+  background: var(--lc-navy);
+  color: rgba(255, 255, 255, 0.65);
+  padding: clamp(1.75rem, 1.5rem + 1vw, 2.5rem) 0 1rem;
+  margin-top: auto;
+  font-size: 0.875rem;
+}
+
+.lc-footer h3 {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.6rem;
+}
+
+.lc-footer a {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.875rem;
+}
+
+.lc-footer a:hover {
+  color: #fff;
+}
+
+.lc-footer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lc-footer li {
+  margin-bottom: 0.3rem;
+}
+
+.lc-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+}
+
+.lc-footer-brand img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.lc-footer-tagline {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  max-width: 20rem;
+  margin-bottom: 0;
+}
+
+/* Three equal columns with a divider between each, so the sections read as
+   evenly segregated rather than "brand + company | contact". */
+.lc-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.lc-footer-col + .lc-footer-col {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 2rem;
+}
+
+@media (max-width: 767.98px) {
+  .lc-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Stacked: separate with a rule above instead of beside. */
+  .lc-footer-col + .lc-footer-col {
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1.5rem;
+  }
+}
+
+.lc-footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin-top: 1.25rem;
+  padding-top: 0.9rem;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+/* Contact list: icon in a fixed-width column so every line of a wrapped
+   address starts at the same left edge instead of under the icon. */
+.lc-footer-contact li {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 0.5rem;
+  align-items: start;
+  margin-bottom: 0.55rem;
+}
+
+.lc-footer-contact li svg {
+  /* Nudge down so the icon sits on the first line's baseline. */
+  margin-top: 0.28rem;
+}
+
+.lc-footer-contact address {
+  font-style: normal;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.lc-footer-contact address span {
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
+   Hospital directory cards
+   -------------------------------------------------------------------------- */
+
+.hospital-card {
+  /* A real <button> so the whole card is keyboard reachable. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  width: 100%;
+  height: 100%;
+  padding: 1.5rem;
+  border: 1px solid var(--lc-line);
+  border-radius: var(--lc-radius);
+  background: var(--lc-surface);
+  box-shadow: var(--lc-shadow-sm);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.hospital-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lc-shadow);
+  border-color: var(--lc-violet);
+}
+
+.hospital-card h3 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+
+.hospital-card-address {
+  display: grid;
+  grid-template-columns: 15px 1fr;
+  gap: 0.45rem;
+  align-items: start;
+  color: var(--lc-muted);
+  font-size: 0.88rem;
+  margin: 0 0 1rem;
+}
+
+.hospital-card-address svg {
+  margin-top: 0.25rem;
+}
+
+.hospital-card-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.hospital-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+  color: var(--lc-violet);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------------------------
+   Detail item — icon column + label/value, used on the hospital detail cards.
+   The fixed icon column keeps labels and values aligned across columns.
+   -------------------------------------------------------------------------- */
+
+.detail-item {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.detail-item > svg {
+  color: var(--lc-violet);
+  /* Sit on the label's line rather than centring against the whole block. */
+  margin-top: 0.15rem;
+}
+
+.detail-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lc-muted);
+  margin-bottom: 0.25rem;
+}
+
+.detail-value {
+  margin: 0;
+  color: var(--lc-ink);
+  line-height: 1.5;
+}
+

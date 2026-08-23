@@ -1,0 +1,22 @@
+{
+  // SQLTools connection to the local docker compose Postgres (service "db").
+  // Requires the extensions:
+  //   mtxr.sqltools
+  //   mtxr.sqltools-driver-pg
+  // Local development credentials only - see docker-compose.yml.
+  "sqltools.connections": [
+    {
+      "name": "LifeCare (local docker)",
+      "driver": "PostgreSQL",
+      "server": "localhost",
+      "port": 5432,
+      "database": "lifecare",
+      "username": "lifecare",
+      "password": "lifecare",
+      "askForPassword": false,
+      "connectionTimeout": 15,
+      "previewLimit": 50
+    }
+  ],
+  "sqltools.useNodeRuntime": true
+}

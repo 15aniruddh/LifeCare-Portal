@@ -1,0 +1,625 @@
+/* ==========================================================================
+   LifeCare Portal — design tokens and base styles
+   Violet / navy healthcare system layered on top of Bootstrap 5.
+   ========================================================================== */
+
+:root {
+  /* Brand — soft periwinkle violet against a near-black navy */
+  --lc-violet: #6c5ce7;
+  --lc-violet-dark: #5847d6;
+  --lc-violet-soft: #edebfd;
+  --lc-violet-softer: #f6f5fe;
+  --lc-navy: #17173a;
+  --lc-navy-soft: #24244f;
+  --lc-sky: #dfeaf8;
+
+  /* Neutrals */
+  --lc-ink: #17173a;
+  --lc-body: #5f6180;
+  --lc-muted: #8a8ca6;
+  --lc-line: #e8e8f0;
+  --lc-line-strong: #d9d9e6;
+  --lc-surface: #ffffff;
+  --lc-canvas: #fbfbfe;
+  --lc-panel: #f5f5fa;
+
+  /* Status */
+  --lc-success: #14876a;
+  --lc-success-soft: #e2f4ef;
+  --lc-warning: #b0740c;
+  --lc-warning-soft: #fbf1de;
+  --lc-danger: #d0384a;
+  --lc-danger-soft: #fbe9eb;
+  --lc-info: var(--lc-violet);
+  --lc-info-soft: var(--lc-violet-soft);
+
+  /* Shape — the reference leans on generous radii */
+  --lc-radius-sm: 10px;
+  --lc-radius: 16px;
+  --lc-radius-lg: 24px;
+  --lc-radius-xl: 32px;
+  --lc-radius-pill: 999px;
+
+  /* Depth — soft and diffuse, never harsh */
+  --lc-shadow-sm: 0 1px 2px rgba(23, 23, 58, 0.04),
+    0 2px 8px rgba(23, 23, 58, 0.04);
+  --lc-shadow: 0 4px 12px rgba(23, 23, 58, 0.05),
+    0 12px 32px rgba(23, 23, 58, 0.07);
+  --lc-shadow-lg: 0 12px 24px rgba(23, 23, 58, 0.07),
+    0 32px 64px rgba(23, 23, 58, 0.1);
+
+  /* Bootstrap overrides */
+  --bs-body-color: var(--lc-body);
+  --bs-body-bg: var(--lc-canvas);
+  --bs-link-color: var(--lc-violet);
+  --bs-link-hover-color: var(--lc-violet-dark);
+  --bs-border-color: var(--lc-line);
+  --bs-primary: var(--lc-violet);
+  --bs-primary-rgb: 108, 92, 231;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--lc-body);
+  background-color: var(--lc-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings are large but comparatively light — the reference never shouts. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--lc-ink);
+  font-weight: 600;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+}
+
+h1,
+.h1 {
+  font-size: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  font-weight: 600;
+}
+h2,
+.h2 {
+  font-size: clamp(1.6rem, 1.2rem + 1.9vw, 2.5rem);
+  font-weight: 600;
+}
+h3,
+.h3 {
+  font-size: clamp(1.25rem, 1.1rem + 0.8vw, 1.6rem);
+}
+h4,
+.h4 {
+  font-size: clamp(1.1rem, 1.02rem + 0.4vw, 1.3rem);
+}
+h5,
+.h5 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: none;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(108, 92, 231, 0.45);
+  outline-offset: 2px;
+}
+
+/* Highlight one word inside a headline, as in the reference. */
+.text-accent {
+  color: var(--lc-violet);
+}
+
+/* --------------------------------------------------------------------------
+   App shell
+   -------------------------------------------------------------------------- */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page-body {
+  flex: 1 0 auto;
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Eyebrow pill + section headings
+   -------------------------------------------------------------------------- */
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: var(--lc-radius-pill);
+  background: var(--lc-violet-soft);
+  color: var(--lc-navy);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: 1rem;
+}
+
+.eyebrow-on-dark {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.section {
+  padding: clamp(3rem, 2rem + 4vw, 6rem) 0;
+}
+
+.section-tight {
+  padding: clamp(2rem, 1.5rem + 2vw, 3.5rem) 0;
+}
+
+.section-heading {
+  text-align: center;
+  max-width: 44rem;
+  margin: 0 auto clamp(2rem, 1.5rem + 2vw, 3.25rem);
+}
+
+.section-heading h2 {
+  margin-bottom: 0.75rem;
+  /* Keeps two-line headings balanced like the reference. */
+  text-wrap: balance;
+}
+
+.section-heading p {
+  color: var(--lc-muted);
+  margin-bottom: 0;
+  font-size: 1.02rem;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons — dark navy pills
+   -------------------------------------------------------------------------- */
+
+.btn {
+  --bs-btn-font-weight: 600;
+  --bs-btn-border-radius: var(--lc-radius-pill);
+  --bs-btn-padding-y: 0.6rem;
+  --bs-btn-padding-x: 1.5rem;
+  --bs-btn-font-size: 0.95rem;
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+    color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.btn:hover {
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-sm {
+  --bs-btn-padding-y: 0.4rem;
+  --bs-btn-padding-x: 1.1rem;
+  --bs-btn-font-size: 0.85rem;
+}
+
+.btn-lg {
+  --bs-btn-padding-y: 0.8rem;
+  --bs-btn-padding-x: 2rem;
+  --bs-btn-font-size: 1rem;
+}
+
+/* Primary action: near-black navy, as in the reference's "Learn more". */
+.btn-primary {
+  --bs-btn-bg: var(--lc-navy);
+  --bs-btn-border-color: var(--lc-navy);
+  --bs-btn-hover-bg: var(--lc-navy-soft);
+  --bs-btn-hover-border-color: var(--lc-navy-soft);
+  --bs-btn-active-bg: var(--lc-navy-soft);
+  --bs-btn-active-border-color: var(--lc-navy-soft);
+  --bs-btn-disabled-bg: var(--lc-navy);
+  --bs-btn-disabled-border-color: var(--lc-navy);
+}
+
+/* Secondary emphasis: the brand violet. */
+.btn-accent {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--lc-violet);
+  --bs-btn-border-color: var(--lc-violet);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--lc-violet-dark);
+  --bs-btn-hover-border-color: var(--lc-violet-dark);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--lc-violet-dark);
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: var(--lc-violet);
+  --bs-btn-disabled-border-color: var(--lc-violet);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--lc-navy);
+  --bs-btn-border-color: var(--lc-line-strong);
+  --bs-btn-hover-color: var(--lc-navy);
+  --bs-btn-hover-bg: var(--lc-violet-soft);
+  --bs-btn-hover-border-color: var(--lc-violet-soft);
+  --bs-btn-active-color: var(--lc-navy);
+  --bs-btn-active-bg: var(--lc-violet-soft);
+  --bs-btn-active-border-color: var(--lc-violet-soft);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--lc-body);
+  --bs-btn-border-color: var(--lc-line-strong);
+  --bs-btn-hover-color: var(--lc-navy);
+  --bs-btn-hover-bg: var(--lc-panel);
+  --bs-btn-hover-border-color: var(--lc-line-strong);
+}
+
+.btn-danger {
+  --bs-btn-bg: var(--lc-danger);
+  --bs-btn-border-color: var(--lc-danger);
+  --bs-btn-hover-bg: #b62d3e;
+  --bs-btn-hover-border-color: #b62d3e;
+}
+
+.btn-success {
+  --bs-btn-bg: var(--lc-success);
+  --bs-btn-border-color: var(--lc-success);
+  --bs-btn-hover-bg: #0f6e56;
+  --bs-btn-hover-border-color: #0f6e56;
+}
+
+.btn-warning {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--lc-warning);
+  --bs-btn-border-color: var(--lc-warning);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #96620a;
+  --bs-btn-hover-border-color: #96620a;
+}
+
+/* Small circular arrow button, as on the reference testimonial. */
+.btn-circle {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Cards
+   -------------------------------------------------------------------------- */
+
+.app-card {
+  border: 1px solid var(--lc-line);
+  border-radius: var(--lc-radius-lg);
+  background: var(--lc-surface);
+  box-shadow: var(--lc-shadow-sm);
+}
+
+/* The bordered service tile from the reference's specialty grid. */
+.tile-card {
+  height: 100%;
+  border: 1px solid var(--lc-line);
+  border-radius: var(--lc-radius);
+  background: var(--lc-surface);
+  padding: 1.6rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.tile-card:hover {
+  border-color: var(--lc-violet);
+  box-shadow: var(--lc-shadow);
+  transform: translateY(-3px);
+}
+
+.tile-card h3 {
+  font-size: 1.15rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.tile-card p {
+  color: var(--lc-muted);
+  font-size: 0.92rem;
+  margin-bottom: 0;
+}
+
+.tile-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--lc-violet-soft);
+  color: var(--lc-violet);
+}
+
+.tile-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Action card used across the dashboards. */
+.action-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--lc-line);
+  border-radius: var(--lc-radius);
+  background: var(--lc-surface);
+  box-shadow: var(--lc-shadow-sm);
+  padding: 1.5rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.action-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lc-shadow);
+  border-color: var(--lc-violet);
+}
+
+.action-card h3 {
+  font-size: 1.1rem;
+  margin: 1.15rem 0 0.4rem;
+}
+
+.action-card p {
+  color: var(--lc-muted);
+  font-size: 0.92rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Pin the button to the bottom so a row of cards lines up. */
+.action-card .btn {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+/* --------------------------------------------------------------------------
+   Forms
+   -------------------------------------------------------------------------- */
+
+.form-label {
+  font-weight: 600;
+  color: var(--lc-ink);
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.form-control,
+.form-select {
+  border-color: var(--lc-line-strong);
+  border-radius: var(--lc-radius-sm);
+  padding: 0.7rem 0.95rem;
+  /* 1rem = 16px keeps iOS Safari from zooming on focus. */
+  font-size: 1rem;
+  color: var(--lc-ink);
+  background-color: var(--lc-surface);
+}
+
+.form-control::placeholder {
+  color: #a9abc2;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--lc-violet);
+  box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.14);
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--lc-danger);
+}
+
+.form-control.is-invalid:focus {
+  box-shadow: 0 0 0 4px rgba(208, 56, 74, 0.14);
+}
+
+.form-text {
+  color: var(--lc-muted);
+  font-size: 0.85rem;
+}
+
+.invalid-feedback {
+  font-size: 0.85rem;
+}
+
+.form-check-input {
+  border-color: var(--lc-line-strong);
+}
+
+.form-check-input:checked {
+  background-color: var(--lc-violet);
+  border-color: var(--lc-violet);
+}
+
+.form-check-input:focus {
+  border-color: var(--lc-violet);
+  box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.14);
+}
+
+.form-check-label {
+  color: var(--lc-body);
+}
+
+/* --------------------------------------------------------------------------
+   Tables — scroll inside their own container, never the page
+   -------------------------------------------------------------------------- */
+
+.table-card {
+  border: 1px solid var(--lc-line);
+  border-radius: var(--lc-radius-lg);
+  background: var(--lc-surface);
+  box-shadow: var(--lc-shadow-sm);
+  overflow: hidden;
+}
+
+.table-card .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-card .table {
+  margin-bottom: 0;
+  min-width: 720px;
+  color: var(--lc-body);
+  vertical-align: middle;
+  border-color: var(--lc-line);
+}
+
+.table-card .table > thead {
+  background: var(--lc-violet-softer);
+}
+
+.table-card .table > thead th {
+  color: var(--lc-ink);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--lc-line);
+  padding: 0.9rem 1.25rem;
+}
+
+.table-card .table > tbody td {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--lc-line);
+}
+
+.table-card .table > tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-card .table > tbody tr:hover {
+  background: var(--lc-violet-softer);
+}
+
+/* --------------------------------------------------------------------------
+   Status pills
+   -------------------------------------------------------------------------- */
+
+.pill {
+  display: inline-block;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--lc-radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.pill-neutral {
+  background: var(--lc-violet-soft);
+  color: var(--lc-navy);
+}
+.pill-success {
+  background: var(--lc-success-soft);
+  color: var(--lc-success);
+}
+.pill-warning {
+  background: var(--lc-warning-soft);
+  color: var(--lc-warning);
+}
+.pill-danger {
+  background: var(--lc-danger-soft);
+  color: var(--lc-danger);
+}
+
+/* --------------------------------------------------------------------------
+   Misc
+   -------------------------------------------------------------------------- */
+
+.empty-state {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--lc-muted);
+}
+
+.empty-state svg {
+  width: 44px;
+  height: 44px;
+  color: var(--lc-line-strong);
+  margin-bottom: 0.75rem;
+}
+
+.text-muted {
+  color: var(--lc-muted) !important;
+}
+
+.check-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.75rem;
+}
+
+.check-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.7rem;
+  color: var(--lc-body);
+}
+
+.check-list li svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin-top: 0.28rem;
+  color: var(--lc-violet);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

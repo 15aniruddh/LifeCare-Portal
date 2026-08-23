@@ -1,0 +1,5 @@
+# VS Code SQLTools scratch files, recreated on demand when a query editor opens.
+*.session.sql
+
+# macOS
+.DS_Store

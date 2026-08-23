@@ -1,0 +1,33 @@
+import axios from "axios";
+
+const REQUEST_API_BASE_URL = "http://localhost:9091/request";
+
+class RequestServiceApi {
+  addRequest(userid, hospid, request) {
+    return axios.post(
+      REQUEST_API_BASE_URL + "/addrequest/" + userid + "/" + hospid,
+      request
+    );
+  }
+
+  acceptrejectPendingRequest(status, reqid) {
+    return axios.put(
+      REQUEST_API_BASE_URL + "/acceptrequest/" + status + "/" + reqid
+    );
+  }
+
+  getAllPendingRequestforHospital(hospid) {
+    return axios.get(REQUEST_API_BASE_URL + "/pendingrequest/" + hospid);
+  }
+
+  getAllRequestByUser(userid) {
+    return axios.get(REQUEST_API_BASE_URL + "/requestbyuser/" + userid);
+  }
+
+  getAllRequestforHospital(hospid) {
+    return axios.get(REQUEST_API_BASE_URL + "/requestforhosp/" + hospid);
+  }
+}
+
+const requestServiceApi = new RequestServiceApi();
+export default requestServiceApi;
