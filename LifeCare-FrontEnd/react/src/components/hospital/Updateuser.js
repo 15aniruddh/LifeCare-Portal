@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import Swal from "sweetalert2";
-import AdminServiceApi from "../service/AdminServiceApi.js";
+import AdminServiceApi from "../../services/AdminServiceApi.js";
 import PageHeader from "../common/PageHeader";
 
 const GENDERS = [

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import HospitalServiceApi from "../service/HospitalServiceApi.js";
+import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 import PageHeader from "../common/PageHeader";
 import { readAccount } from "../common/DashboardShell";
 

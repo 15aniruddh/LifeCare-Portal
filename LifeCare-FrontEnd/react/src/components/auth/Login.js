@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
-import LoginApi from "../service/LoginApi.js";
+import LoginApi from "../../services/LoginApi.js";
 import { useNavigate } from "react-router";
-import logo from "../images/logo.png";
-import { clearSession } from "../service/httpAuth";
+import logo from "../../assets/images/logo.png";
+import { storeSession } from "../../services/httpAuth";
+import GoogleButton from "./GoogleButton";
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
@@ -14,6 +15,23 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  // Google only appears once the backend reports it is configured, so an
+  // unconfigured deployment never shows a button that would 404.
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    LoginApi.getProviders()
+      .then((response) => {
+        if (!cancelled) setGoogleEnabled(Boolean(response.data?.google));
+      })
+      // Password login still works if this probe fails; just leave Google off.
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const setError = (field, message) =>
     setErrors((prev) => ({ ...prev, [field]: message }));
@@ -65,20 +83,7 @@ export default function Login() {
     setSubmitting(true);
     LoginApi.loginUser({ email: email.trim(), password })
       .then((response) => {
-        const data = response.data;
-        // Clear any stale role before storing the new one.
-        clearSession();
-
-        if (data.role === "admin") {
-          sessionStorage.setItem("admin", JSON.stringify(data));
-          navigate("/admindashboard");
-        } else if (data.role === "hospital") {
-          sessionStorage.setItem("hospital", JSON.stringify(data));
-          navigate("/hospitaldashboard");
-        } else {
-          sessionStorage.setItem("user", JSON.stringify(data));
-          navigate("/userdashboard");
-        }
+        navigate(storeSession(response.data));
       })
       .catch((error) => {
         console.error("Login failed", error?.response?.data ?? error);
@@ -156,12 +161,29 @@ export default function Login() {
                   <button
                     type="submit"
                     className="btn btn-primary btn-lg"
-                    disabled={submitting}
+                    disabled={submitting || redirecting}
                   >
                     {submitting ? "Signing in…" : "Login"}
                   </button>
                 </div>
               </form>
+
+              {googleEnabled && (
+                <>
+                  <div className="auth-divider">
+                    <span>or</span>
+                  </div>
+
+                  <GoogleButton
+                    label={redirecting ? "Taking you to Google…" : "Continue with Google"}
+                    disabled={submitting || redirecting}
+                    onClick={() => {
+                      setRedirecting(true);
+                      LoginApi.startGoogleLogin();
+                    }}
+                  />
+                </>
+              )}
 
               <p className="text-center text-muted mt-4 mb-0">
                 New to LifeCare? <Link to="/usersignup">Create an account</Link>

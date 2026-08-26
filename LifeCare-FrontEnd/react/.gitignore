@@ -13,6 +13,9 @@
 
 # misc
 .DS_Store
+# Local configuration. .env.example is the committed template; .env itself is
+# where a real API host (and one day a key) lands, so it stays out of git.
+.env
 .env.local
 .env.development.local
 .env.test.local

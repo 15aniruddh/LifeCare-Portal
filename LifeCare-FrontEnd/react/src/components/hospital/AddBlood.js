@@ -1,6 +1,6 @@
 import React from "react";
 import HospitalNumbersForm from "../common/HospitalNumbersForm";
-import HospitalServiceApi from "../service/HospitalServiceApi.js";
+import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 
 const FIELDS = [
   { key: "a_pos", label: "A+" },

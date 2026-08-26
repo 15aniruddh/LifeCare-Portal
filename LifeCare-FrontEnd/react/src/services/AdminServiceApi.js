@@ -1,8 +1,10 @@
 import axios from "axios";
 
-const ADMIN_API_BASE_URL = "http://localhost:9091/admin";
-const USER_API_BASE_URL = "http://localhost:9091/user";
-const HOSPITAL_API_BASE_URL = "http://localhost:9091/hospital";
+import { API_BASE_URL } from "./apiConfig";
+
+const ADMIN_API_BASE_URL = `${API_BASE_URL}/admin`;
+const USER_API_BASE_URL = `${API_BASE_URL}/user`;
+const HOSPITAL_API_BASE_URL = `${API_BASE_URL}/hospital`;
 
 class AdminServiceApi {
   addHospital(hospital) {

@@ -109,6 +109,21 @@ class Settings(BaseSettings):
     # comma-separated form used in .env reaches the validator below intact.
     CORS_ORIGINS: Annotated[list[str], NoDecode] = Field(default_factory=lambda: ["*"])
 
+    # ---- Google OAuth (Sign in with Google) --------------------------
+    # Credentials come from the Google Cloud console:
+    #   APIs & Services -> Credentials -> OAuth 2.0 Client ID (Web application)
+    # Leave GOOGLE_OAUTH_ENABLED false until both values are filled in; the
+    # login page hides the Google button while it is off.
+    GOOGLE_OAUTH_ENABLED: bool = False
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    # Must match an "Authorised redirect URI" registered on that client exactly.
+    GOOGLE_REDIRECT_URI: str = "http://localhost:9091/login/google/callback"
+    # First Google sign-in for an unknown address registers a patient account.
+    GOOGLE_AUTO_CREATE_USERS: bool = True
+    # Where the callback sends the browser back to once the JWT is minted.
+    FRONTEND_BASE_URL: str = "http://localhost:3000"
+
     # ---- Mail --------------------------------------------------------
     MAIL_ENABLED: bool = False
     MAIL_HOST: str = "smtp.gmail.com"
@@ -134,6 +149,13 @@ class Settings(BaseSettings):
                     pass
             return [o.strip() for o in raw.split(",") if o.strip()]
         return v
+
+    @property
+    def google_oauth_ready(self) -> bool:
+        """True only when Google login is switched on *and* configured."""
+        return bool(
+            self.GOOGLE_OAUTH_ENABLED and self.GOOGLE_CLIENT_ID and self.GOOGLE_CLIENT_SECRET
+        )
 
     @property
     def is_production(self) -> bool:
@@ -172,6 +194,12 @@ class Settings(BaseSettings):
     def validate_for_runtime(self) -> None:
         """Fail fast on unsafe production configuration."""
         problems: list[str] = []
+        # Enabled but half-configured is always a mistake, in every environment.
+        if self.GOOGLE_OAUTH_ENABLED and not (self.GOOGLE_CLIENT_ID and self.GOOGLE_CLIENT_SECRET):
+            problems.append(
+                "GOOGLE_OAUTH_ENABLED is true but GOOGLE_CLIENT_ID / "
+                "GOOGLE_CLIENT_SECRET are not both set"
+            )
         if self.is_production:
             if (
                 self.SECRET_KEY == "change-me-in-every-real-environment"

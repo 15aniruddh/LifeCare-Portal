@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const REQUEST_API_BASE_URL = "http://localhost:9091/request";
+import { API_BASE_URL } from "./apiConfig";
+
+const REQUEST_API_BASE_URL = `${API_BASE_URL}/request`;
 
 class RequestServiceApi {
   addRequest(userid, hospid, request) {

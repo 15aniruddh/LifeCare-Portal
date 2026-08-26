@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import AdminServiceApi from "../service/AdminServiceApi.js";
+import AdminServiceApi from "../../services/AdminServiceApi.js";
 import PageHeader from "../common/PageHeader";
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;

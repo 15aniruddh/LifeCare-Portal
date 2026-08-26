@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
-import UserServiceApi from "../service/UserServiceApi";
+import UserServiceApi from "../../services/UserServiceApi";
 import { useNavigate } from "react-router";
-import logo from "../images/logo.png";
+import logo from "../../assets/images/logo.png";
 
 // A name is one or more alphabetic words, optionally joined by a space,
 // hyphen or apostrophe. Single-word names ("Aniruddh") are valid.

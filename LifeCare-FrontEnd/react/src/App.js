@@ -5,6 +5,7 @@ import Login from "./components/auth/Login";
 import Contact from "./components/common/Contact";
 import HospitalDashboard from "./components/hospital/HospitalDashboard";
 import Usersignup from "./components/auth/Usersignup";
+import GoogleCallback from "./components/auth/GoogleCallback";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import AddHospital from "./components/admin/AddHospital";
 import Hospitallist from "./components/admin/Hospitallist";
@@ -39,6 +40,7 @@ function App() {
         <Route exact path="/contact" element={<Contact />}></Route>        
         <Route exact path="/login" element={<Login />}></Route>
         <Route exact path="/usersignup" element={<Usersignup />}></Route>
+        <Route exact path="/login/google/callback" element={<GoogleCallback />}></Route>
         <Route exact path="/admindashboard" element={<AdminDashboard />}></Route>
         <Route exact path="/addhospital" element={<AddHospital />}></Route>
         <Route exact path="/viewhospital" element={<Hospitallist />}></Route>

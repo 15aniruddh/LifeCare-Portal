@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import HospitalServiceApi from "../service/HospitalServiceApi.js";
+import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 import PageHeader from "./PageHeader";
 import { readAccount } from "./DashboardShell";
 import { IconArrowRight, IconInbox, IconPin, IconSearch } from "./Icons";

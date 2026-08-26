@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import HospitalDirectory from "../common/HospitalDirectory";
-import HospitalServiceApi from "../service/HospitalServiceApi.js";
+import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 import DataTable from "../common/DataTable";
 
 const COLUMNS = [

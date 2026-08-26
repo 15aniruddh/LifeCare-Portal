@@ -21,6 +21,29 @@ export function clearSession() {
   ROLE_KEYS.forEach((key) => sessionStorage.removeItem(key));
 }
 
+/** Where each role lands after signing in. */
+export const ROLE_HOME = {
+  admin: "/admindashboard",
+  hospital: "/hospitaldashboard",
+  user: "/userdashboard",
+};
+
+/**
+ * Store a successful login and report where to send the browser next.
+ *
+ * Both ways in — the password form and the Google callback — go through here,
+ * so the session always looks the same whichever one was used. An unrecognised
+ * role is treated as a patient, which is what the password form did before.
+ */
+export function storeSession(data) {
+  const role = ROLE_KEYS.includes(data?.role) ? data.role : "user";
+  // Drop any stale role first: signing in as one role must not leave the
+  // previous role's session sitting alongside it.
+  clearSession();
+  sessionStorage.setItem(role, JSON.stringify({ ...data, role }));
+  return ROLE_HOME[role];
+}
+
 /**
  * The API rejects protected routes without a bearer token, so attach the one
  * we stored at login to every outgoing request. Installed once from index.js.

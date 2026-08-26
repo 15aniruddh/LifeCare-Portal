@@ -501,6 +501,53 @@
   margin-bottom: 1rem;
 }
 
+/* "or" rule between the password form and the Google button. The line is drawn
+   either side of the label rather than behind it, so nothing shows through. */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Google's branding guidance: their mark, on a neutral surface, with the
+   wordmark left alone. Sized to match .btn-lg next to it. */
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  font-weight: 600;
+}
+
+.btn-google:hover:not(:disabled),
+.btn-google:focus-visible {
+  background: #f8f9fa;
+  color: #3c4043;
+  border-color: rgba(0, 0, 0, 0.24);
+}
+
+.btn-google:disabled {
+  opacity: 0.65;
+}
+
+.btn-google svg {
+  flex: none;
+}
+
 /* --------------------------------------------------------------------------
    Footer
    -------------------------------------------------------------------------- */
@@ -560,16 +607,31 @@
 .lc-footer-tagline {
   font-size: 0.875rem;
   line-height: 1.5;
-  max-width: 20rem;
+  max-width: 32rem;
   margin-bottom: 0;
 }
 
-/* Three equal columns with a divider between each, so the sections read as
-   evenly segregated rather than "brand + company | contact". */
+/* Three columns with a divider between each, so the sections read as evenly
+   segregated rather than "brand + company | contact". */
 .lc-footer-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2rem;
+}
+
+/* From large screens up the columns are weighted by how much they actually
+   carry: the two Company links need very little, so the width goes to the
+   description on the left and to the address on the right — which then fits
+   without the middle column trailing a block of empty space. The floors are
+   what each side needs to keep its own line count: 21rem holds the description
+   to two lines, 25rem holds the address to two. */
+@media (min-width: 992px) {
+  .lc-footer-grid {
+    grid-template-columns:
+      minmax(21rem, 1.5fr)
+      minmax(7rem, 0.65fr)
+      minmax(25rem, 1.35fr);
+  }
 }
 
 .lc-footer-col + .lc-footer-col {

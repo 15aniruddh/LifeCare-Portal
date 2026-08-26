@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const USER_API_BASE_URL = "http://localhost:9091/user";
+import { API_BASE_URL } from "./apiConfig";
+
+const USER_API_BASE_URL = `${API_BASE_URL}/user`;
 
 class UserServiceApi {
   addUser(user) {

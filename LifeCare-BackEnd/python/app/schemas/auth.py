@@ -25,6 +25,17 @@ class LoginResponse(BaseModel):
     expires_in: int
 
 
+class LoginProviders(BaseModel):
+    """What ``GET /login/providers`` reports, so the login page can adapt.
+
+    Password login is always available; Google appears only once the server has
+    both halves of its OAuth client configured.
+    """
+
+    password: bool = True
+    google: bool = False
+
+
 class CurrentPrincipal(BaseModel):
     """Decoded token, attached to the request by the auth dependency."""
 

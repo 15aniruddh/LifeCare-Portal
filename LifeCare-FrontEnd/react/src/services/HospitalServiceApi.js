@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const HOSPITAL_API_BASE_URL = "http://localhost:9091/hospital";
+import { API_BASE_URL } from "./apiConfig";
+
+const HOSPITAL_API_BASE_URL = `${API_BASE_URL}/hospital`;
 
 class HospitalServiceApi {
   addBed(id, hospital) {

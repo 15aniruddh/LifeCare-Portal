@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import AdminServiceApi from "../service/AdminServiceApi.js";
+import AdminServiceApi from "../../services/AdminServiceApi.js";
 import PageHeader from "../common/PageHeader";
 import DataTable from "../common/DataTable";
 

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import HospitalServiceApi from "../service/HospitalServiceApi.js";
+import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 import PageHeader from "../common/PageHeader";
 import DataTable from "../common/DataTable";
 import { readAccount } from "../common/DashboardShell";

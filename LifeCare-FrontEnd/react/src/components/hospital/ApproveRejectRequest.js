@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import RequestServiceApi from "../service/RequestServiceApi.js";
+import RequestServiceApi from "../../services/RequestServiceApi.js";
 import PageHeader from "../common/PageHeader";
 import DataTable from "../common/DataTable";
 import { readAccount } from "../common/DashboardShell";

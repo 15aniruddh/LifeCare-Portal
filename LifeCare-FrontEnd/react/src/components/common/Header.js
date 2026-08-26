@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Container, Nav, Navbar } from "react-bootstrap";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import logo from "../images/logo.png";
+import logo from "../../assets/images/logo.png";
 import { IconLogout } from "./Icons";
-import { clearSession } from "../service/httpAuth";
+import { clearSession } from "../../services/httpAuth";
 
 /** Whoever is signed in, and where their dashboard lives. */
 function readSession() {

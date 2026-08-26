@@ -16,6 +16,13 @@ os.environ.setdefault("ENV", "local")
 os.environ.setdefault("MAIL_ENABLED", "false")
 os.environ.setdefault("LOG_JSON", "false")
 os.environ.setdefault("AUTH_ENABLED", "true")
+# Environment variables win over the .env file, so these pin the test run to a
+# known configuration instead of inheriting whatever the developer has enabled
+# locally. Tests that need Google sign-in switch it on themselves.
+os.environ.setdefault("GOOGLE_OAUTH_ENABLED", "false")
+os.environ.setdefault("GOOGLE_CLIENT_ID", "")
+os.environ.setdefault("GOOGLE_CLIENT_SECRET", "")
+os.environ.setdefault("FRONTEND_BASE_URL", "http://localhost:3000")
 
 import pytest  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
