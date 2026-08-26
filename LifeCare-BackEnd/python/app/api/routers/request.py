@@ -10,7 +10,7 @@ from app.api.deps import (
     HospitalSelfOrAdmin,
     PrincipalDep,
     RequestServiceDep,
-    UserSelfOrAdminLower,
+    UserSelfOrAdmin,
 )
 from app.core.errors import AuthorizationError
 from app.schemas.request import RequestCreate, RequestRead
@@ -19,19 +19,19 @@ router = APIRouter(prefix="/request", tags=["request"])
 
 
 @router.post(
-    "/addrequest/{userid}/{hospid}",
+    "/addrequest/{userId}/{hospid}",
     status_code=status.HTTP_201_CREATED,
     response_class=PlainTextResponse,
-    dependencies=[UserSelfOrAdminLower],
+    dependencies=[UserSelfOrAdmin],
     summary="Raise a bed request",
 )
 async def save_request(
     payload: RequestCreate,
     service: RequestServiceDep,
-    userid: int = Path(ge=1),
+    userId: int = Path(ge=1),  # noqa: N803
     hospid: int = Path(ge=1),
 ) -> str:
-    await service.create(userid, hospid, payload)
+    await service.create(userId, hospid, payload)
     return "Successfully Added"
 
 
@@ -66,13 +66,13 @@ async def get_request_for_hospital(service: RequestServiceDep, hospid: int = Pat
 
 
 @router.get(
-    "/requestbyuser/{userid}",
+    "/requestbyuser/{userId}",
     response_model=list[RequestRead],
-    dependencies=[UserSelfOrAdminLower],
+    dependencies=[UserSelfOrAdmin],
     summary="List a user's requests",
 )
-async def get_request_by_user(service: RequestServiceDep, userid: int = Path(ge=1)):
-    return await service.list_for_user(userid)
+async def get_request_by_user(service: RequestServiceDep, userId: int = Path(ge=1)):  # noqa: N803
+    return await service.list_for_user(userId)
 
 
 @router.put(

@@ -70,7 +70,7 @@ def _fragment(location: str) -> dict[str, str]:
 # -- the switch --------------------------------------------------------
 async def test_providers_reports_google_off_by_default(client):
     body = (await client.get("/login/providers")).json()
-    assert body == {"password": True, "google": False}
+    assert body == {"google": False}
 
 
 async def test_providers_reports_google_on_when_configured(client, google_enabled):

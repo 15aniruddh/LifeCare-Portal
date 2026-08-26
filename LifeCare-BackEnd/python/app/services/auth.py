@@ -17,15 +17,18 @@ from __future__ import annotations
 import logging
 import secrets
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.errors import AuthenticationError
 from app.core.security import create_access_token, hash_password, verify_password
+from app.models.admin import Admin
 from app.models.user import User
-from app.repositories import AdminRepository, HospitalRepository, UserRepository
 from app.schemas.auth import LoginResponse
 from app.services.google_oauth import GoogleProfile
+from app.services.hospital import find_by_email as find_hospital_by_email
+from app.services.user import find_by_email as find_user_by_email
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +38,6 @@ _INVALID = "Invalid email or password."
 class AuthService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-        self.admins = AdminRepository(session)
-        self.hospitals = HospitalRepository(session)
-        self.users = UserRepository(session)
 
     async def authenticate(self, email: str, password: str) -> LoginResponse:
         resolved = await self._resolve(email, password)
@@ -57,7 +57,7 @@ class AuthService:
         id and its data. An address nobody holds registers a patient account,
         which is what a first-time Google sign-in is.
         """
-        existing = await self._resolve_by_email(profile.email)
+        existing = await self._resolve(profile.email)
         if existing is not None:
             subject, name, role = existing
             logger.info(
@@ -71,16 +71,16 @@ class AuthService:
                 "No LifeCare account uses this Google address. Sign up first."
             )
 
-        user = await self.users.add(
-            User(
-                name=profile.name,
-                email=profile.email,
-                # Google is the only way into this account. Store an unguessable
-                # hash rather than a blank, so the password form can never match.
-                password=hash_password(secrets.token_urlsafe(32)),
-                age=0,
-            )
+        user = User(
+            name=profile.name,
+            email=profile.email,
+            # Google is the only way into this account. Store an unguessable
+            # hash rather than a blank, so the password form can never match.
+            password=hash_password(secrets.token_urlsafe(32)),
+            age=0,
         )
+        self.session.add(user)
+        await self.session.flush()
         logger.info("Google login registered a new user %s (id=%s)", user.email, user.userid)
         return self._issue(user.userid, user.name, "user")
 
@@ -94,33 +94,30 @@ class AuthService:
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         )
 
-    async def _resolve_by_email(self, email: str) -> tuple[int, str, str] | None:
-        """The same three-table lookup, without a password to check."""
-        admin = await self.admins.find_by_email(email)
-        if admin:
+    async def _resolve(
+        self, email: str, password: str | None = None
+    ) -> tuple[int, str, str] | None:
+        """Walk admin, then hospital, then user.
+
+        With a password, a row whose hash does not match is skipped and the
+        search continues into the next table. With ``password=None`` - the
+        Google path - holding the verified address is enough.
+        """
+
+        def matches(stored_hash: str | None) -> bool:
+            return password is None or verify_password(password, stored_hash)
+
+        stmt = select(Admin).where(func.lower(Admin.email) == email.lower())
+        admin = (await self.session.execute(stmt)).scalars().first()
+        if admin and matches(admin.password):
             return admin.id, admin.name or "admin", "admin"
 
-        hospital = await self.hospitals.find_by_email(email)
-        if hospital:
+        hospital = await find_hospital_by_email(self.session, email)
+        if hospital and matches(hospital.password):
             return hospital.hospid, hospital.hospitalname, "hospital"
 
-        user = await self.users.find_by_email(email)
-        if user:
-            return user.userid, user.name, "user"
-
-        return None
-
-    async def _resolve(self, email: str, password: str) -> tuple[int, str, str] | None:
-        admin = await self.admins.find_by_email(email)
-        if admin and verify_password(password, admin.password):
-            return admin.id, admin.name or "admin", "admin"
-
-        hospital = await self.hospitals.find_by_email(email)
-        if hospital and verify_password(password, hospital.password):
-            return hospital.hospid, hospital.hospitalname, "hospital"
-
-        user = await self.users.find_by_email(email)
-        if user and verify_password(password, user.password):
+        user = await find_user_by_email(self.session, email)
+        if user and matches(user.password):
             return user.userid, user.name, "user"
 
         return None

@@ -86,33 +86,15 @@ async def get_all_hospitals(service: HospitalServiceDep):
     return await service.list_all()
 
 
-# -- availability lookups by hospital name -----------------------------
-# All three returned the whole Hospital entity in the Spring version; kept that
-# way so the React availability screens keep reading the fields they expect.
+# -- lookup by hospital name -------------------------------------------
+# Bed, blood and oxygen availability all live on the same row, so one route
+# serves every availability screen.
 @router.get(
-    "/viewbed/{hosname}",
+    "/byname/{hosname}",
     response_model=HospitalPublic,
-    summary="Bed availability by hospital name",
+    summary="Availability by hospital name",
 )
-async def get_bed_by_name(hosname: str, service: HospitalServiceDep):
-    return await service.get_by_name(hosname)
-
-
-@router.get(
-    "/viewblood/{hosname}",
-    response_model=HospitalPublic,
-    summary="Blood availability by hospital name",
-)
-async def get_blood_by_name(hosname: str, service: HospitalServiceDep):
-    return await service.get_by_name(hosname)
-
-
-@router.get(
-    "/viewoxygen/{hosname}",
-    response_model=HospitalPublic,
-    summary="Oxygen availability by hospital name",
-)
-async def get_oxygen_by_name(hosname: str, service: HospitalServiceDep):
+async def get_by_name(hosname: str, service: HospitalServiceDep):
     return await service.get_by_name(hosname)
 
 
@@ -158,13 +140,3 @@ async def update_hospital_details(
 async def delete_hospital_details(service: HospitalServiceDep, hospid: int = Path(ge=1)) -> str:
     return await service.delete(hospid)
 
-
-# Declared last: "/{hospid}" is the least specific path in this router.
-@router.get(
-    "/{hospid}",
-    response_model=HospitalRead,
-    dependencies=[HospitalSelfOrAdmin],
-    summary="Fetch a hospital (alias used by the admin screens)",
-)
-async def get_hospital_details(service: HospitalServiceDep, hospid: int = Path(ge=1)):
-    return await service.get_by_id(hospid)

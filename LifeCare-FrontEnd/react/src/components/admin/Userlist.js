@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import AdminServiceApi from "../../services/AdminServiceApi.js";
+import UserServiceApi from "../../services/UserServiceApi.js";
 import PageHeader from "../common/PageHeader";
 import DataTable from "../common/DataTable";
 
@@ -32,7 +33,7 @@ export default function Userlist() {
     }).then((result) => {
       if (!result.isConfirmed) return;
 
-      AdminServiceApi.deleteUser(user.userid)
+      UserServiceApi.deleteUser(user.userid)
         .then(() => {
           setUsers((prev) => prev.filter((row) => row.userid !== user.userid));
           Swal.fire({

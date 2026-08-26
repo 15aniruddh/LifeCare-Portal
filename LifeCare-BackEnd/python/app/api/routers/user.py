@@ -13,7 +13,7 @@ from app.api.deps import (
 )
 from app.schemas.doctorinfo import DoctorinfoRead
 from app.schemas.user import UserCreate, UserRead, UserUpdate
-from app.services.email import email_service
+from app.services.email import send_registration_email
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -30,7 +30,7 @@ async def save_user(
     user = await service.create(payload)
     # Sent after the response, so a slow or broken SMTP server never delays
     # (or fails) the registration the way it did in the Spring version.
-    background.add_task(email_service.send_registration_email, user.email, user.name)
+    background.add_task(send_registration_email, user.email, user.name)
     return "Successfully Added"
 
 

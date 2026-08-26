@@ -62,7 +62,9 @@ async def test_hospital_sees_pending_and_accepts_it(
     assert len(pending.json()) == 1
     reqid = pending.json()[0]["reqid"]
 
-    before = (await client.get(f"/hospital/{hospital.hospid}", headers=hospital_headers)).json()
+    before = (
+        await client.get(f"/hospital/hospitalid/{hospital.hospid}", headers=hospital_headers)
+    ).json()
     assert before["ventilator"] == 2
 
     accepted = await client.put(
@@ -71,7 +73,9 @@ async def test_hospital_sees_pending_and_accepts_it(
     assert accepted.status_code == 200
     assert accepted.text == "Request Status Updated"
 
-    after = (await client.get(f"/hospital/{hospital.hospid}", headers=hospital_headers)).json()
+    after = (
+        await client.get(f"/hospital/hospitalid/{hospital.hospid}", headers=hospital_headers)
+    ).json()
     # Accepting takes one bed of the requested type out of stock.
     assert after["ventilator"] == 1
 
@@ -96,7 +100,9 @@ async def test_rejecting_does_not_touch_inventory(
 
     await client.put(f"/request/acceptrequest/rejected/{reqid}", headers=hospital_headers)
 
-    hosp = (await client.get(f"/hospital/{hospital.hospid}", headers=hospital_headers)).json()
+    hosp = (
+        await client.get(f"/hospital/hospitalid/{hospital.hospid}", headers=hospital_headers)
+    ).json()
     assert hosp["normal"] == 5
     all_for_hosp = await client.get(
         f"/request/requestforhosp/{hospital.hospid}", headers=hospital_headers
@@ -125,7 +131,9 @@ async def test_accepting_the_last_bed_twice_is_rejected(
     )
     assert conflict.status_code == 409
 
-    hosp = (await client.get(f"/hospital/{hospital.hospid}", headers=hospital_headers)).json()
+    hosp = (
+        await client.get(f"/hospital/hospitalid/{hospital.hospid}", headers=hospital_headers)
+    ).json()
     assert hosp["oxygen"] == 0
 
 
@@ -151,9 +159,7 @@ async def test_another_hospital_cannot_decide_the_request(
 
     await _raise_request(client, user, hospital, user_headers)
     reqid = (
-        await client.get(
-            f"/request/requestbyuser/{user.userid}", headers=user_headers
-        )
+        await client.get(f"/request/requestbyuser/{user.userid}", headers=user_headers)
     ).json()[0]["reqid"]
 
     intruder = auth_header(hospital.hospid + 500, "hospital", "Rival Hospital")

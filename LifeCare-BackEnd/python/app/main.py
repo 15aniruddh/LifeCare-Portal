@@ -32,16 +32,8 @@ async def lifespan(app: FastAPI):
     configure_logging()
     settings.validate_for_runtime()
     logger.info(
-        "Starting %s v%s (env=%s, auth_enabled=%s)",
-        settings.APP_NAME,
-        settings.APP_VERSION,
-        settings.ENV,
-        settings.AUTH_ENABLED,
+        "Starting %s v%s (env=%s)", settings.APP_NAME, settings.APP_VERSION, settings.ENV
     )
-    if not settings.AUTH_ENABLED:
-        logger.warning(
-            "AUTH_ENABLED is false - every endpoint is open. Do not run this way in production."
-        )
 
     try:
         async with SessionFactory() as session:

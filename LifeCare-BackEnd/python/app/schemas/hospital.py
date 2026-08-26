@@ -9,17 +9,13 @@ from app.schemas.request import RequestRead
 _COUNT = Field(default=0, ge=0)
 
 
-class HospitalCreate(BaseModel):
-    hospitalname: str = Field(min_length=1, max_length=255)
-    email: EmailStr
-    password: str = Field(min_length=8, max_length=128)
-    address: str | None = Field(default=None, max_length=500)
-    contact: str | None = Field(default=None, max_length=32)
-    ambulancecontact: str | None = Field(default=None, max_length=32)
-
+class BedUpdate(BaseModel):
     ventilator: int = _COUNT
     oxygen: int = _COUNT
     normal: int = _COUNT
+
+
+class BloodUpdate(BaseModel):
     a_pos: int = _COUNT
     a_neg: int = _COUNT
     b_pos: int = _COUNT
@@ -28,7 +24,22 @@ class HospitalCreate(BaseModel):
     ab_neg: int = _COUNT
     o_pos: int = _COUNT
     o_neg: int = _COUNT
+
+
+class OxygenUpdate(BaseModel):
     oxygenavailable: int = _COUNT
+
+
+class HospitalCreate(BedUpdate, BloodUpdate, OxygenUpdate):
+    """A new hospital: its identity, plus the same 12 counts the three
+    inventory endpoints write."""
+
+    hospitalname: str = Field(min_length=1, max_length=255)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    address: str | None = Field(default=None, max_length=500)
+    contact: str | None = Field(default=None, max_length=32)
+    ambulancecontact: str | None = Field(default=None, max_length=32)
 
 
 class HospitalUpdate(BaseModel):
@@ -62,27 +73,6 @@ class HospitalUpdate(BaseModel):
     oxygenavailable: int | None = Field(default=None, ge=0)
 
 
-class BedUpdate(BaseModel):
-    ventilator: int = _COUNT
-    oxygen: int = _COUNT
-    normal: int = _COUNT
-
-
-class BloodUpdate(BaseModel):
-    a_pos: int = _COUNT
-    a_neg: int = _COUNT
-    b_pos: int = _COUNT
-    b_neg: int = _COUNT
-    ab_pos: int = _COUNT
-    ab_neg: int = _COUNT
-    o_pos: int = _COUNT
-    o_neg: int = _COUNT
-
-
-class OxygenUpdate(BaseModel):
-    oxygenavailable: int = _COUNT
-
-
 class HospitalPublic(ORMModel):
     """What the public hospital directory may show.
 
@@ -111,32 +101,16 @@ class HospitalPublic(ORMModel):
     oxygenavailable: int = 0
 
 
-class HospitalRead(ORMModel):
-    """Same field names the Spring API emitted, minus the password hash.
+class HospitalRead(HospitalPublic):
+    """Everything :class:`HospitalPublic` shows, plus what only the hospital
+    itself and an admin may see.
 
-    The old API serialised the bcrypt hash to every caller. It is dropped here;
-    see the README for the one frontend screen that round-tripped it.
+    The old Spring API serialised the bcrypt hash to every caller. It is
+    dropped here; see the README for the one frontend screen that
+    round-tripped it.
     """
 
-    hospid: int
-    hospitalname: str
-    address: str | None = None
     email: str
-    contact: str | None = None
-    ambulancecontact: str | None = None
-
-    ventilator: int = 0
-    oxygen: int = 0
-    normal: int = 0
-    a_pos: int = 0
-    a_neg: int = 0
-    b_pos: int = 0
-    b_neg: int = 0
-    ab_pos: int = 0
-    ab_neg: int = 0
-    o_pos: int = 0
-    o_neg: int = 0
-    oxygenavailable: int = 0
 
     doctorinfos: list[DoctorinfoRead] = Field(default_factory=list)
     requests: list[RequestRead] = Field(default_factory=list)

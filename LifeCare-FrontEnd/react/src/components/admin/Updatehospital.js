@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
-import AdminServiceApi from "../../services/AdminServiceApi.js";
+import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 import PageHeader from "../common/PageHeader";
 
 const FIELDS = [
@@ -32,7 +32,7 @@ export default function Updatehospital() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    AdminServiceApi.getByhospId(hospid)
+    HospitalServiceApi.getHospitalById(hospid)
       .then((response) => setHospital(response.data))
       .catch((error) =>
         console.error("Hospital load failed", error?.response?.data ?? error)
@@ -47,7 +47,7 @@ export default function Updatehospital() {
     e.preventDefault();
 
     setSubmitting(true);
-    AdminServiceApi.updateHospital(hospital, hospid)
+    HospitalServiceApi.updateHospital(hospital, hospid)
       .then(() => {
         Swal.fire({
           title: "Hospital updated",

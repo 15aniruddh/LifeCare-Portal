@@ -25,36 +25,32 @@ WELCOME_BODY = (
 )
 
 
-class EmailService:
-    async def send_registration_email(self, recipient: str, name: str | None = None) -> bool:
-        if not settings.MAIL_ENABLED:
-            logger.info("MAIL_ENABLED is false; skipping welcome email to %s", recipient)
-            return False
+async def send_registration_email(recipient: str, name: str | None = None) -> bool:
+    if not settings.MAIL_ENABLED:
+        logger.info("MAIL_ENABLED is false; skipping welcome email to %s", recipient)
+        return False
 
-        message = EmailMessage()
-        message["From"] = settings.MAIL_FROM
-        message["To"] = recipient
-        message["Subject"] = WELCOME_SUBJECT
-        greeting = f"Hello {name},\n\n" if name else ""
-        message.set_content(greeting + WELCOME_BODY)
+    message = EmailMessage()
+    message["From"] = settings.MAIL_FROM
+    message["To"] = recipient
+    message["Subject"] = WELCOME_SUBJECT
+    greeting = f"Hello {name},\n\n" if name else ""
+    message.set_content(greeting + WELCOME_BODY)
 
-        try:
-            await aiosmtplib.send(
-                message,
-                hostname=settings.MAIL_HOST,
-                port=settings.MAIL_PORT,
-                start_tls=settings.MAIL_STARTTLS,
-                username=settings.MAIL_USERNAME or None,
-                password=settings.MAIL_PASSWORD or None,
-                timeout=settings.MAIL_TIMEOUT_SECONDS,
-            )
-        except Exception:
-            # Never fail a registration because the mail server is unhappy.
-            logger.exception("Failed to send welcome email to %s", recipient)
-            return False
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=settings.MAIL_HOST,
+            port=settings.MAIL_PORT,
+            start_tls=settings.MAIL_STARTTLS,
+            username=settings.MAIL_USERNAME or None,
+            password=settings.MAIL_PASSWORD or None,
+            timeout=settings.MAIL_TIMEOUT_SECONDS,
+        )
+    except Exception:
+        # Never fail a registration because the mail server is unhappy.
+        logger.exception("Failed to send welcome email to %s", recipient)
+        return False
 
-        logger.info("Welcome email sent to %s", recipient)
-        return True
-
-
-email_service = EmailService()
+    logger.info("Welcome email sent to %s", recipient)
+    return True

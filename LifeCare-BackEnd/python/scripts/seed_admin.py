@@ -20,18 +20,19 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from sqlalchemy import func, select  # noqa: E402
+
 from app.core.security import hash_password  # noqa: E402
 from app.db.session import SessionFactory, dispose_engine  # noqa: E402
 from app.models.admin import Admin  # noqa: E402
-from app.repositories.admin import AdminRepository  # noqa: E402
 
 MIN_PASSWORD_LENGTH = 12
 
 
 async def seed(email: str, name: str, password: str) -> None:
     async with SessionFactory() as session:
-        repo = AdminRepository(session)
-        existing = await repo.find_by_email(email)
+        stmt = select(Admin).where(func.lower(Admin.email) == email.lower())
+        existing = (await session.execute(stmt)).scalars().first()
         if existing:
             existing.name = name
             existing.password = hash_password(password)

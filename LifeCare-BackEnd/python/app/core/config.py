@@ -81,10 +81,6 @@ class Settings(BaseSettings):
     # Set DATABASE_URL to override the assembled URL entirely (e.g. on RDS).
     DATABASE_URL: str | None = None
 
-    DB_POOL_SIZE: int = 10
-    DB_MAX_OVERFLOW: int = 20
-    DB_POOL_TIMEOUT: int = 30
-    DB_POOL_RECYCLE: int = 1800
     DB_ECHO: bool = False
 
     # ---- Security ----------------------------------------------------
@@ -93,11 +89,6 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 8
     BCRYPT_ROUNDS: int = 10  # matches Spring's BCryptPasswordEncoder(10)
-
-    # Set to false only while the frontend is still being wired up for JWT.
-    # When false the API behaves like the original Spring service: no endpoint
-    # requires a token. Never ship this as false.
-    AUTH_ENABLED: bool = True
 
     # Login brute-force throttle (per client IP).
     LOGIN_RATE_LIMIT_ATTEMPTS: int = 10
@@ -206,8 +197,6 @@ class Settings(BaseSettings):
                 or len(self.SECRET_KEY) < 32
             ):
                 problems.append("SECRET_KEY must be a random value of at least 32 characters")
-            if not self.AUTH_ENABLED:
-                problems.append("AUTH_ENABLED must be true in production")
             if "*" in self.CORS_ORIGINS:
                 problems.append("CORS_ORIGINS must list explicit origins in production")
             if self.DEBUG:

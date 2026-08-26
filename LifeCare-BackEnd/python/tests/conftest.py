@@ -15,7 +15,6 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-long-enough-000000"
 os.environ.setdefault("ENV", "local")
 os.environ.setdefault("MAIL_ENABLED", "false")
 os.environ.setdefault("LOG_JSON", "false")
-os.environ.setdefault("AUTH_ENABLED", "true")
 # Environment variables win over the .env file, so these pin the test run to a
 # known configuration instead of inheriting whatever the developer has enabled
 # locally. Tests that need Google sign-in switch it on themselves.

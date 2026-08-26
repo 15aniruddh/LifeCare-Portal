@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
 import LoginApi from "../../services/LoginApi.js";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { storeSession } from "../../services/httpAuth";
 import GoogleButton from "./GoogleButton";

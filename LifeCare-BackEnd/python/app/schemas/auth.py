@@ -32,7 +32,6 @@ class LoginProviders(BaseModel):
     both halves of its OAuth client configured.
     """
 
-    password: bool = True
     google: bool = False
 
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
-import AdminServiceApi from "../../services/AdminServiceApi.js";
+import UserServiceApi from "../../services/UserServiceApi.js";
 import PageHeader from "../common/PageHeader";
 
 const GENDERS = [
@@ -26,7 +26,7 @@ export default function Updateuser() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    AdminServiceApi.getById(userid)
+    UserServiceApi.getById(userid)
       .then((response) => setUser(response.data))
       .catch((error) =>
         console.error("User load failed", error?.response?.data ?? error)
@@ -42,7 +42,7 @@ export default function Updateuser() {
 
     setSubmitting(true);
     // The API stores age as a number, not the string the input holds.
-    AdminServiceApi.updateUser({ ...user, age: Number(user.age) || 0 }, userid)
+    UserServiceApi.updateUser({ ...user, age: Number(user.age) || 0 }, userid)
       .then(() => {
         Swal.fire({
           title: "User updated",

@@ -27,10 +27,8 @@ dev = [
     "ruff>=0.7.0",
     "mypy>=1.13.0",
 ]
-# Only needed to run scripts/migrate_mysql_to_postgres.py, which talks to both
-# databases with blocking drivers.
+# Blocking driver, for Alembic offline mode and the standalone scripts.
 migrate = [
-    "PyMySQL>=1.1.1",
     "psycopg[binary]>=3.2.0",
 ]
 

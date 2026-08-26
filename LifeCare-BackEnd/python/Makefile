@@ -3,7 +3,7 @@ VENV := .venv
 PY   := $(VENV)/bin/python
 PIP  := $(VENV)/bin/pip
 
-.PHONY: help venv install run test lint format typecheck migrate revision seed-admin seed-dev migrate-data db-up db-down db-shell db-reset docker-up docker-down clean
+.PHONY: help venv install run test lint format typecheck migrate revision seed-admin seed-dev db-up db-down db-shell db-reset docker-up docker-down clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -42,9 +42,6 @@ seed-admin: ## Create an admin: make seed-admin email=a@b.com name="Admin"
 
 seed-dev: ## Insert dummy test data (add args="--reset" to replace existing rows)
 	$(PY) scripts/seed_dev_data.py $(args)
-
-migrate-data: ## Copy the old MySQL data into Postgres (add args="--dry-run")
-	$(PY) scripts/migrate_mysql_to_postgres.py $(args)
 
 db-up: ## Start only the Postgres container (postgres:16-alpine)
 	docker compose up -d db

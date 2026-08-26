@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { Container, Nav, Navbar } from "react-bootstrap";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { IconLogout } from "./Icons";
 import { clearSession } from "../../services/httpAuth";
@@ -41,9 +40,10 @@ const PUBLIC_LINKS = [
   { to: "/ambulancecontact", label: "Ambulance" },
 ];
 
+const navLinkClass = ({ isActive }) => (isActive ? "nav-link active" : "nav-link");
+
 export default function Header() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [expanded, setExpanded] = useState(false);
 
   // Re-read on every render so it reflects a login that just happened.
@@ -58,48 +58,56 @@ export default function Header() {
   };
 
   return (
-    <Navbar
-      expand="lg"
-      sticky="top"
-      className="lc-navbar"
-      expanded={expanded}
-      onToggle={setExpanded}
-    >
-      <Container>
-        <Navbar.Brand as={Link} to="/" onClick={closeMenu}>
+    // Plain Bootstrap markup: below lg the toggle adds `show`, and at lg and up
+    // `.navbar-expand-lg` keeps the panel open. Both are pure CSS, so the
+    // navbar needs no JavaScript from Bootstrap itself.
+    <nav className="navbar navbar-expand-lg sticky-top lc-navbar">
+      <div className="container">
+        <Link className="navbar-brand" to="/" onClick={closeMenu}>
           <img src={logo} alt="" />
           LifeCare
-        </Navbar.Brand>
+        </Link>
 
-        <Navbar.Toggle aria-controls="lc-main-nav" aria-label="Toggle menu" />
+        <button
+          type="button"
+          className="navbar-toggler"
+          aria-controls="lc-main-nav"
+          aria-expanded={expanded}
+          aria-label="Toggle menu"
+          onClick={() => setExpanded((open) => !open)}
+        >
+          <span className="navbar-toggler-icon" />
+        </button>
 
-        <Navbar.Collapse id="lc-main-nav">
-          <Nav className="me-auto">
+        <div
+          id="lc-main-nav"
+          className={`collapse navbar-collapse${expanded ? " show" : ""}`}
+        >
+          <ul className="navbar-nav me-auto">
             {PUBLIC_LINKS.map((link) => (
-              <Nav.Link
-                key={link.to}
-                as={NavLink}
-                to={link.to}
-                end={link.end}
-                onClick={closeMenu}
-              >
-                {link.label}
-              </Nav.Link>
+              <li className="nav-item" key={link.to}>
+                <NavLink
+                  className={navLinkClass}
+                  to={link.to}
+                  end={link.end}
+                  onClick={closeMenu}
+                >
+                  {link.label}
+                </NavLink>
+              </li>
             ))}
             {session && (
-              <Nav.Link
-                as={NavLink}
-                to={session.dashboard}
-                onClick={closeMenu}
-                // The dashboard link should read as active on its sub-pages too.
-                className={
-                  location.pathname === session.dashboard ? "active" : undefined
-                }
-              >
-                Dashboard
-              </Nav.Link>
+              <li className="nav-item">
+                <NavLink
+                  className={navLinkClass}
+                  to={session.dashboard}
+                  onClick={closeMenu}
+                >
+                  Dashboard
+                </NavLink>
+              </li>
             )}
-          </Nav>
+          </ul>
 
           <div className="lc-nav-actions">
             {session ? (
@@ -135,8 +143,8 @@ export default function Header() {
               </>
             )}
           </div>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
+        </div>
+      </div>
+    </nav>
   );
 }

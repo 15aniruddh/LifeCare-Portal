@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import AdminServiceApi from "../../services/AdminServiceApi.js";
+import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 import PageHeader from "../common/PageHeader";
 import DataTable from "../common/DataTable";
 
@@ -32,7 +33,7 @@ export default function Hospitallist() {
     }).then((result) => {
       if (!result.isConfirmed) return;
 
-      AdminServiceApi.deleteHospital(hospital.hospid)
+      HospitalServiceApi.deleteHospital(hospital.hospid)
         .then(() => {
           setHospitals((prev) =>
             prev.filter((row) => row.hospid !== hospital.hospid)

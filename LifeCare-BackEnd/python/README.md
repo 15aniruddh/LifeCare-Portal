@@ -30,7 +30,8 @@ that `POST /login/userlogin` returns — see
 
 ## Layout
 
-The Spring layering is preserved one-for-one, so the two trees read side by side.
+The Spring layering is preserved, except that its repository interfaces are
+folded into the services - SQLAlchemy's session is already the repository.
 
 ```
 python/
@@ -46,14 +47,12 @@ python/
 │   ├── db/                     # engine, session, declarative base
 │   ├── models/                 # @Entity classes
 │   ├── schemas/                # DTOs + request/response contracts
-│   ├── repositories/           # JpaRepository interfaces
 │   ├── services/               # *ServiceImpl classes
 │   └── api/
 │       ├── deps.py             # DI wiring + authorisation rules
 │       └── routers/            # @RestController classes
 ├── alembic/versions/           # schema migrations
 ├── scripts/
-│   ├── migrate_mysql_to_postgres.py
 │   ├── seed_admin.py
 │   └── seed_dev_data.py        # the demo dataset (make seed-dev)
 ├── tests/
@@ -271,7 +270,6 @@ work signed out.
 | POST   | `/admin/addhospital`                    | admin | |
 | GET    | `/admin/allhospitals`                   | admin | |
 | GET    | `/admin/allusers`                       | admin | |
-| GET    | `/hospital/{hospid}`                    | that hospital, or admin | |
 | GET    | `/hospital/hospitalid/{hospid}`         | that hospital, or admin | |
 | PUT    | `/hospital/updatehospital/{hospid}`     | that hospital, or admin | Partial update |
 | DELETE | `/hospital/deletehospital/{hospid}`     | that hospital, or admin | |
@@ -280,10 +278,8 @@ work signed out.
 | PUT    | `/hospital/addoxygen/{hospid}`          | that hospital, or admin | |
 | POST   | `/hospital/adddoctorinfo/{hospid}`      | that hospital, or admin | |
 | GET    | `/hospital/doctorinfo/{hospid}`         | public | A hospital's doctors |
-| GET    | `/hospital/viewbed/{hosname}`           | public | |
-| GET    | `/hospital/viewblood/{hosname}`         | public | |
-| GET    | `/hospital/viewoxygen/{hosname}`        | public | |
-| POST   | `/request/addrequest/{userid}/{hospid}` | that user, or admin | |
+| GET    | `/hospital/byname/{hosname}`            | public | Bed, blood and oxygen availability |
+| POST   | `/request/addrequest/{userId}/{hospid}` | that user, or admin | |
 | GET    | `/request/requestbyuser/{userid}`       | that user, or admin | |
 | GET    | `/request/pendingrequest/{hospid}`      | that hospital, or admin | |
 | GET    | `/request/requestforhosp/{hospid}`      | that hospital, or admin | |
@@ -293,7 +289,7 @@ work signed out.
 
 The four public `/hospital/*` reads return the `HospitalPublic` schema, which
 deliberately omits the hospital's login `email` and its `requests` list. The
-authenticated `/hospital/{hospid}` routes still return the full `HospitalRead`.
+authenticated `/hospital/hospitalid/{hospid}` routes still return the full `HospitalRead`.
 
 Plain-text responses (`"Successfully Added"`, `"Bed Details Added"`, and the
 rest, including the original `"Blood Detials Added"` misspelling) are byte-for-byte
@@ -319,7 +315,6 @@ app stores the whole response in `sessionStorage` under its role key
 
 Tokens last `ACCESS_TOKEN_EXPIRE_MINUTES` (default 480 = 8 hours).
 
-While debugging, `AUTH_ENABLED=false` reproduces the old fully-open behaviour.
 It is refused when `ENV` is `staging` or `production`.
 
 ---
@@ -450,24 +445,6 @@ sequences behind and makes the next insert collide. Note the primary key on
 `admins` is `id`, while the other tables use `hospid` / `userid` / `doctorid` /
 `reqid`.
 
-### Moving the original MySQL data across
-
-```bash
-.venv/bin/pip install -e '.[migrate]'   # adds PyMySQL + psycopg
-make migrate                            # create the Postgres schema first
-
-# set MYSQL_* in .env, then:
-make migrate-data args="--dry-run"      # report row counts, write nothing
-make migrate-data                       # copy for real
-```
-
-The script copies parents before children, preserves every primary key and
-foreign key, resets the Postgres identity sequences past the highest copied id,
-and refuses to write into a non-empty database unless you pass `--truncate`.
-Hospital and user passwords are already bcrypt and are copied verbatim; admin
-passwords were plaintext and are hashed during the copy.
-
----
 
 ## Configuration
 
@@ -478,14 +455,13 @@ list. The ones that matter most:
 | -------- | ------- | ----- |
 | `SECRET_KEY`      | — | **Required.** Signs the JWTs. Must be ≥32 chars in staging/production. |
 | `ENV`             | `local` | `staging`/`production` enable the safety checks below. |
-| `AUTH_ENABLED`    | `true` | `false` disables all authorisation. Refused in production. |
 | `CORS_ORIGINS`    | `*` | Must be an explicit list in production. |
 | `DATABASE_URL`    | — | Full connection string; overrides every `POSTGRES_*` value. Paste a Neon/Supabase/RDS URL as-is. |
 | `MAIL_ENABLED`    | `false` | Welcome emails are off until configured. |
 | `PORT`            | `9091` | The port the React app calls. |
 
 On startup in `staging`/`production` the app refuses to boot with a default
-`SECRET_KEY`, `AUTH_ENABLED=false`, `DEBUG=true`, or a wildcard CORS origin.
+`SECRET_KEY`, `DEBUG=true`, or a wildcard CORS origin.
 
 ---
 

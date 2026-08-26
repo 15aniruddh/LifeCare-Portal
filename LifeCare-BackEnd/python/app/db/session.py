@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from typing import Any, cast
 
+from sqlalchemy import CursorResult, Result
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -17,10 +19,6 @@ engine: AsyncEngine = create_async_engine(
     settings.sqlalchemy_url,
     echo=settings.DB_ECHO,
     pool_pre_ping=True,
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_timeout=settings.DB_POOL_TIMEOUT,
-    pool_recycle=settings.DB_POOL_RECYCLE,
 )
 
 SessionFactory: async_sessionmaker[AsyncSession] = async_sessionmaker(
@@ -48,3 +46,12 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def dispose_engine() -> None:
     await engine.dispose()
+
+
+def rowcount(result: Result[Any]) -> int:
+    """Rows touched by an UPDATE/DELETE.
+
+    ``Result`` only exposes ``rowcount`` on the cursor-backed subclass, which is
+    always what a DML statement returns.
+    """
+    return int(cast(CursorResult[Any], result).rowcount or 0)

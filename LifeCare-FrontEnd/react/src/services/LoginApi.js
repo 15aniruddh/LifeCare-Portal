@@ -4,17 +4,17 @@ import { API_BASE_URL } from "./apiConfig";
 
 const USER_LOGIN_BASE_URL = `${API_BASE_URL}/login`;
 
-class LoginApi {
+const loginApi = {
   loginUser(user) {
     return axios.post(USER_LOGIN_BASE_URL + "/userlogin", user);
-  }
+  },
 
-  /** Which sign-in methods this backend offers, e.g. `{password, google}`.
-   *  Google only reports true once the server has its OAuth credentials, so
-   *  the login page can keep the button hidden until it would actually work. */
+  /** Which sign-in methods this backend offers, e.g. `{google}`. Google only
+   *  reports true once the server has its OAuth credentials, so the login page
+   *  can keep the button hidden until it would actually work. */
   getProviders() {
     return axios.get(USER_LOGIN_BASE_URL + "/providers");
-  }
+  },
 
   /** Start Sign in with Google.
    *
@@ -25,8 +25,7 @@ class LoginApi {
    */
   startGoogleLogin() {
     window.location.assign(USER_LOGIN_BASE_URL + "/google");
-  }
-}
+  },
+};
 
-const loginApi = new LoginApi();
 export default loginApi;

@@ -59,8 +59,14 @@ async def test_bed_blood_and_oxygen_updates(client, hospital, hospital_headers):
     blood = await client.put(
         f"/hospital/addblood/{hospid}",
         json={
-            "a_pos": 1, "a_neg": 2, "b_pos": 3, "b_neg": 4,
-            "ab_pos": 5, "ab_neg": 6, "o_pos": 7, "o_neg": 8,
+            "a_pos": 1,
+            "a_neg": 2,
+            "b_pos": 3,
+            "b_neg": 4,
+            "ab_pos": 5,
+            "ab_neg": 6,
+            "o_pos": 7,
+            "o_neg": 8,
         },
         headers=hospital_headers,
     )
@@ -71,21 +77,21 @@ async def test_bed_blood_and_oxygen_updates(client, hospital, hospital_headers):
     )
     assert oxygen.text == "Oxygen Details Added"
 
-    fetched = (await client.get(f"/hospital/{hospid}", headers=hospital_headers)).json()
+    fetched = (await client.get(f"/hospital/hospitalid/{hospid}", headers=hospital_headers)).json()
     assert (fetched["ventilator"], fetched["oxygen"], fetched["normal"]) == (7, 8, 9)
     assert fetched["ab_neg"] == 6
     assert fetched["oxygenavailable"] == 42
 
 
 async def test_view_by_name_returns_hospital(client, hospital, user_headers):
-    resp = await client.get(f"/hospital/viewblood/{hospital.hospitalname}", headers=user_headers)
+    resp = await client.get(f"/hospital/byname/{hospital.hospitalname}", headers=user_headers)
     assert resp.status_code == 200
     assert resp.json()["hospid"] == hospital.hospid
     assert resp.json()["a_pos"] == 3
 
 
 async def test_unknown_hospital_name_is_404(client, user_headers):
-    resp = await client.get("/hospital/viewbed/Nowhere%20General", headers=user_headers)
+    resp = await client.get("/hospital/byname/Nowhere%20General", headers=user_headers)
     assert resp.status_code == 404
 
 
@@ -107,9 +113,7 @@ async def test_doctor_can_be_added_and_listed(client, hospital, hospital_headers
     by_id = await client.get(f"/hospital/doctorinfo/{hospid}", headers=hospital_headers)
     assert [d["name"] for d in by_id.json()] == ["Dr Neha Iyer"]
 
-    by_name = await client.get(
-        f"/user/doctorinfo/{hospital.hospitalname}", headers=user_headers
-    )
+    by_name = await client.get(f"/user/doctorinfo/{hospital.hospitalname}", headers=user_headers)
     assert by_name.json()[0]["specialization"] == "Pulmonology"
     # The parent hospital was @JsonIgnore'd in Spring; keep it out.
     assert "hospital" not in by_name.json()[0]
@@ -151,4 +155,6 @@ async def test_delete_hospital(client, hospital, admin_headers):
     resp = await client.delete(f"/hospital/deletehospital/{hospid}", headers=admin_headers)
     assert resp.status_code == 200
     assert resp.text == f"User Details with Id '{hospid}' deleted successfully!!!"
-    assert (await client.get(f"/hospital/{hospid}", headers=admin_headers)).status_code == 404
+    assert (
+        await client.get(f"/hospital/hospitalid/{hospid}", headers=admin_headers)
+    ).status_code == 404

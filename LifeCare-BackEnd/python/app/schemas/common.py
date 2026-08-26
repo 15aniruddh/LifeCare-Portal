@@ -9,10 +9,6 @@ class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class Message(BaseModel):
-    message: str
-
-
 class HealthStatus(BaseModel):
     status: str
     version: str
