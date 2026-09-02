@@ -57,8 +57,9 @@ python/
 │   └── seed_dev_data.py        # the demo dataset (make seed-dev)
 ├── tests/
 ├── .env.example                # copy to .env
-├── docker-compose.yml          # local Postgres (+ optional API)
-├── Dockerfile
+├── docker-compose.yml          # local Postgres, for offline development
+├── template.yaml               # AWS SAM stack: one Lambda + a Function URL
+├── github-oidc.yaml            # one-time: the IAM role GitHub Actions assumes
 └── Makefile                    # every command below — `make help`
 ```
 
@@ -167,15 +168,6 @@ default to the `docker-compose.yml` credentials (`lifecare` / `lifecare` /
 Useful targets: `make db-shell` opens `psql` in the container, `make db-down`
 stops it, `make db-reset` destroys the volume and rebuilds from scratch.
 `make help` lists everything.
-
-### Option C — everything in Docker
-
-```bash
-cp .env.example .env          # set SECRET_KEY
-docker compose up --build
-```
-
-Brings up Postgres *and* the API together, applying migrations on boot.
 
 ### Switching between hosted and local
 
@@ -514,10 +506,275 @@ a real instance before deploying.
 
 ---
 
+## Deploying to AWS Lambda
+
+The whole API — every route, unchanged — runs on a single Lambda function.
+`app/lambda_handler.py` wraps the same `app.main:app` in Mangum, which turns the
+Lambda event into an ASGI request; `template.yaml` deploys that as a zip package
+behind a Lambda Function URL.
+
+**This stack costs nothing while nobody is using it**, and stays inside the free
+tier for normal use. See [Keeping the bill at zero](#keeping-the-bill-at-zero)
+below for exactly why, and for the two things that would break that.
+
+Needs the [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html),
+Docker (only as a build sandbox for the Linux/arm64 wheels — nothing is built
+from a Dockerfile and nothing is pushed to a registry), and credentials in your
+shell (`aws configure`).
+
+```bash
+# 1. Database: keep using Neon (or Supabase). Both have a free tier that scales
+#    to zero. Do NOT use RDS for this — see the cost notes below.
+
+# 2. Apply migrations from your machine, pointed at that database.
+DATABASE_URL='postgresql://user:pass@host/lifecare?sslmode=require' make migrate
+
+# 3. Build and deploy. The first deploy prompts for the parameters below and
+#    remembers them in samconfig.toml.
+make sam-build
+make sam-deploy
+```
+
+Both go to the shared project bucket under the `backend/` prefix. SAM requires
+that bucket to be in the **same region as the stack**, so deploy into
+`ap-south-2` — the region the bucket lives in.
+
+`sam deploy --guided` asks for:
+
+| Parameter | Value |
+|---|---|
+| `DatabaseUrl` | the same connection string you migrated with |
+| `SecretKey` | `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` |
+| `CorsOrigins` | your frontend origin, e.g. `https://lifecare.example.com` — `*` is refused when `Env` is `staging`/`production` |
+| `FrontendBaseUrl` | where the Google callback hands the browser back |
+| `MaxConcurrency` | leave at `5` — the spend ceiling, see below |
+
+It prints `ApiUrl` at the end. Put that in the frontend's
+`LifeCare-FrontEnd/vite/.env` as the API base URL, and redeploy the frontend.
+
+Anything else in `.env.example` is a plain environment variable — add it under
+`Environment.Variables` in `template.yaml` (Google OAuth and SMTP settings, for
+instance).
+
+Redeploy after a code change with `make sam-build && sam deploy`.
+
+### Continuous deployment from GitHub
+
+`.github/workflows/backend.yml` (at the **repository root**, not in this folder —
+GitHub only reads `.github/workflows/`) tests and deploys this service on every
+push to `master`.
+
+**The monorepo is handled by two settings in that file:**
+
+* `paths:` — the workflow only runs when something under
+  `LifeCare-BackEnd/python/**` changed. Editing the frontend, the docs, or the
+  old Java backend triggers nothing, so you never pay for a pointless deploy or
+  wait on an irrelevant build.
+* `defaults.run.working-directory` — every step runs as if launched from this
+  folder, so `pytest` and `sam build` need no path juggling.
+
+The pipeline is: **test → migrate → deploy → curl `/health`**. Migrations run
+before the deploy, so if a migration fails the old function keeps serving. If
+the tests fail nothing reaches AWS at all.
+
+#### The shared bucket
+
+Both pipelines write to one bucket, `lifecare-portal-635738234790-ap-south-2-an`,
+split by prefix:
+
+```
+lifecare-portal-635738234790-ap-south-2-an/
+├── backend/     # Lambda deployment zips, uploaded by sam deploy
+└── frontend/    # the built Vite site, served by CloudFront
+```
+
+They stay out of each other's way by construction. CloudFront's `OriginPath` is
+`/frontend`, so the CDN physically cannot serve a deployment artifact, and the
+frontend's `s3 sync --delete` is confined to its own prefix. The deploy role's
+S3 permissions are scoped per prefix as well, so neither pipeline can write into
+the other's folder even by accident.
+
+Because SAM needs its artifact bucket in the stack's own region, **every stack
+here deploys to `ap-south-2`**.
+
+#### One-time setup
+
+**1. Create the deploy role.** `github-oidc.yaml` gives GitHub Actions a role it
+can assume via OpenID Connect — GitHub never stores an AWS access key, and the
+credentials each run gets expire in an hour. Deploy it once from your machine:
+
+```bash
+aws cloudformation deploy \
+  --template-file github-oidc.yaml \
+  --stack-name lifecare-api-cicd \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides GitHubRepo=15aniruddh/LifeCare-Portal DeployBranch=master \
+                        ArtifactBucket=lifecare-portal-635738234790-ap-south-2-an
+
+aws cloudformation describe-stacks --stack-name lifecare-api-cicd \
+  --query 'Stacks[0].Outputs[0].OutputValue' --output text
+```
+
+The role can only be assumed from this repository, on this branch. A pull
+request — including one from a fork — cannot reach AWS.
+
+> If it fails with `EntityAlreadyExists`, this account is already connected to
+> GitHub Actions. Redeploy with `CreateOidcProvider=no` added to
+> `--parameter-overrides`. It creates only IAM resources, which are free.
+
+**2. Add the repository secrets and variables** under
+*Settings → Secrets and variables → Actions*:
+
+| Kind | Name | Value |
+|---|---|---|
+| Secret | `DATABASE_URL` | your Neon connection string |
+| Secret | `APP_SECRET_KEY` | `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` |
+| Variable | `AWS_DEPLOY_ROLE_ARN` | the ARN printed above |
+| Variable | `AWS_REGION` | `ap-south-2` — must match the artifact bucket's region |
+| Variable | `ARTIFACT_BUCKET` | `lifecare-portal-635738234790-ap-south-2-an` |
+| Variable | `STACK_NAME` | `lifecare-api` |
+| Variable | `APP_ENV` | `production` (use `dev` until the frontend has a real URL) |
+| Variable | `CORS_ORIGINS` | your frontend origin |
+| Variable | `FRONTEND_BASE_URL` | your frontend origin |
+
+Secrets are write-only and masked in logs; variables are visible, which is why
+only the two real credentials are secrets.
+
+`STACK_NAME` must stay `lifecare-api` unless you also redeploy `github-oidc.yaml`
+with a matching `StackName` — the role's permissions are scoped to that prefix,
+so a rename locks CI out until both agree. The same is true of `ARTIFACT_BUCKET`
+and the two prefixes.
+
+**3. Push to `master`.** Watch it under the Actions tab. The final step prints
+the API URL into the run summary.
+
+After this, `sam deploy` from your laptop is only for emergencies — CI is the
+path. Local `samconfig.toml` and CI are independent, and both are gitignored.
+
+#### If CI fails on a permission
+
+The role in `github-oidc.yaml` is deliberately scoped to this one stack rather
+than given blanket access. If a deploy fails with `is not authorized to perform:
+<action>`, add that exact action to the matching statement and redeploy the
+`lifecare-api-cicd` stack. That is the intended way to widen it — resist
+replacing the policy with a wildcard.
+
+### Keeping the bill at zero
+
+Lambda bills per request and per GB-second of execution, and **nothing at all
+while idle** — that is the whole reason to prefer it to EC2 here. The free tier
+covers 1M requests and 400,000 GB-seconds a month; at 512 MB that is about 200
+hours of execution, which a portfolio-scale app will not come close to.
+
+Everything in `template.yaml` was chosen to avoid a charge, and the reasoning is
+in comments next to each line:
+
+| Choice | What it avoids |
+|---|---|
+| Zip package, not a container image | ECR bills per GB-month and keeps every image you ever pushed. A zip sits in SAM's S3 bucket for cents a year |
+| Lambda Function URL, not API Gateway | API Gateway adds ~$1 per million requests on top of Lambda's own, plus its own minimums |
+| `ReservedConcurrentExecutions: 5` | The URL is public. This caps how fast anyone — an attacker, or a retry loop in the frontend — can spend money. Past 5 at once they get a 429, not a bill |
+| `RetentionInDays: 7` on the log group | Lambda's default is *never expire*: every access log line you ever emit is stored, and billed, forever |
+| `Architectures: [arm64]` | 20% cheaper per GB-second than x86, same code |
+| `MemorySize: 512` | You are billed memory × duration. These requests wait on Postgres, not on CPU, so more memory would cost more without finishing sooner |
+| No provisioned concurrency | Provisioned concurrency bills 24/7 whether or not a request arrives. Cold starts here are ~1–2s, which is the right trade for a free stack |
+| No VPC config | See below — this is the expensive one |
+
+**The two things that would actually cost you money:**
+
+1. **Putting the function in a VPC to reach RDS.** RDS itself is billed per hour
+   whether or not anyone calls the API — it is EC2 with a database on it, which
+   is what you are moving away from. Worse, a Lambda in a private subnet needs a
+   **NAT gateway** to reach anything on the internet (Google OAuth, SMTP), and a
+   NAT gateway is roughly **$32/month before any traffic**, running idle, and is
+   the single most common surprise on an AWS bill. Neon and Supabase are reached
+   over the public internet, so the function needs no VPC and no NAT gateway at
+   all. `template.yaml` deliberately has no `VpcConfig`. Leave it that way.
+
+2. **Leaving the API public and un-capped.** `AuthType: NONE` is required for a
+   browser to call the API, so the URL is world-reachable by design; the JWT is
+   what protects the data, not the network. `MaxConcurrency` is what protects the
+   wallet. Do not raise it without a reason.
+
+### The honest ceiling
+
+AWS has **no hard spend cap** — the budget alarm you set up in the console
+alerts you, it does not stop anything.
+So the real question is not "can this bill me" but "how much, at worst, before I
+notice". With `MaxConcurrency: 5` and `Timeout: 15`, a public URL pegged flat out
+for a solid month tops out around **$85–110**. That is the ceiling on sustained,
+deliberate abuse, not an expectation: idle costs nothing, and normal portfolio
+traffic stays inside the free tier.
+
+The ceiling scales linearly with `MaxConcurrency` — set it to `2` and it is
+roughly $35, set it to `1` and it is under $20. Five is the default because a
+dashboard page firing three or four requests at once would otherwise start
+getting 429s.
+
+If something does go wrong, the kill switch is one command — it stops every
+invocation immediately while leaving the stack in place:
+
+```bash
+aws lambda put-function-concurrency \
+  --function-name <the function name from the stack> \
+  --reserved-concurrent-executions 0
+```
+
+Set it back to 5 to resume, or `sam delete` to remove everything.
+
+Two more worth knowing:
+
+* The AWS free tier is not identical for every account — accounts opened after
+  mid-2025 get a credit-based free plan instead of the older perpetual
+  allowances. Check **Billing → Free tier** in the console once after the first
+  deploy to see which one you are on.
+* If the deploy fails with *"specified concurrent execution limit would cause
+  account limit to go below its minimum"*, your account has a low Lambda
+  concurrency quota (some new accounts start at 10 rather than 1000). Request a
+  quota increase, or remove `ReservedConcurrentExecutions` — but then the spend
+  ceiling above no longer applies.
+* Deployment zips accumulate under `backend/` in the shared bucket — 18 MB per
+  deploy, so a few cents a month after a hundred deploys. Prune it occasionally,
+  or put an S3 lifecycle rule on that prefix. Nothing outside `backend/` is
+  touched by the backend pipeline.
+
+To tear the whole thing down and be certain nothing is left running:
+
+```bash
+sam delete            # removes the function, its URL, IAM role and log group
+```
+
+### What changes on Lambda
+
+* **Connection pool.** `app/db/session.py` drops to a pool of one per container
+  when `AWS_LAMBDA_FUNCTION_NAME` is set. A container serves one request at a
+  time, and a larger pool multiplies into the database's connection limit as
+  concurrency climbs.
+* **No lifespan per request.** Mangum would run FastAPI's startup *and shutdown*
+  on every invocation, disposing the pool each time. `lifespan="off"` turns that
+  off; logging setup and config validation happen at module import instead —
+  which is the cold-start boundary anyway.
+* **Migrations are not run by the app.** Run `make migrate` yourself against the
+  target database, as in step 2 above.
+* **The login rate limiter is per-container**, so it throttles far more loosely
+  than it does on a single server. `MaxConcurrency` bounds how loose.
+* **Secrets are plain Lambda environment variables.** Fine to start; Secrets
+  Manager is $0.40 per secret per month, so only move them there when the account
+  has more than one person in it.
+* **Background tasks run inside the billed request.** Mangum waits for the whole
+  ASGI call to finish, so the registration email in `app/api/routers/user.py`
+  still sends — it just adds to that invocation's duration instead of happening
+  after the response. `MAIL_TIMEOUT_SECONDS` (10s) keeps it under the function's
+  15s timeout. Mail is off unless you add `MAIL_ENABLED` to `template.yaml`.
+* **Cold starts.** First request after ~10 idle minutes takes a second or two
+  while the container boots and connects to Postgres. Warming it on a schedule
+  would fix that and would also mean paying for invocations around the clock, so
+  it is deliberately not done.
+
+---
+
 ## Production notes
 
-* `Dockerfile` is a two-stage build running as a non-root user (uid 10001) with a
-  `HEALTHCHECK` against `/health`.
 * Point your load balancer's liveness probe at `/health` and its readiness probe
   at `/health/ready` (which returns 503 when Postgres is unreachable).
 * Every response carries an `X-Request-ID`; send your own to correlate with an

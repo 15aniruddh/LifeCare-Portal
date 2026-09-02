@@ -1,0 +1,109 @@
+# Workflows must live at the repository root, never inside a project folder -
+# GitHub only reads .github/workflows/. The monorepo is handled by the `paths`
+# filters below (this job ignores the frontend, the docs and the old Java
+# backend entirely) and by `working-directory`, which makes every `run` step
+# behave as if it were launched from LifeCare-BackEnd/python.
+name: Backend
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "LifeCare-BackEnd/python/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "LifeCare-BackEnd/python/**"
+      - ".github/workflows/backend.yml"
+  workflow_dispatch: # lets you deploy by hand from the Actions tab
+
+defaults:
+  run:
+    working-directory: LifeCare-BackEnd/python
+
+# Two pushes in quick succession would otherwise race each other into the same
+# CloudFormation stack. Never cancel a deploy mid-flight, only a queued one.
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e '.[dev]'
+      - run: ruff check app tests scripts
+      - run: mypy app
+      - run: pytest -q
+
+  deploy:
+    needs: test
+    # Pull requests run the tests but must never touch AWS. The OIDC trust
+    # policy pins the branch as well, so this is belt and braces.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write # required to request the OIDC token
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: aws-actions/setup-sam@v2
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # The function is built for arm64 but GitHub's free runners are x86, so
+      # `sam build --use-container` needs emulation to run the arm64 build image.
+      # Swapping template.yaml to Architectures: [x86_64] would remove this step
+      # at the cost of ~20% more per GB-second.
+      - uses: docker/setup-qemu-action@v3
+
+      # Schema first: the new code may expect columns the database lacks. If
+      # this fails the deploy is skipped and the old function keeps serving.
+      - name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          pip install -e .
+          alembic upgrade head
+
+      - run: sam build --use-container
+
+      - name: Deploy
+        run: |
+          sam deploy \
+            --stack-name "${{ vars.STACK_NAME }}" \
+            --region "${{ vars.AWS_REGION }}" \
+            --capabilities CAPABILITY_IAM \
+            --s3-bucket "${{ vars.ARTIFACT_BUCKET }}" \
+            --s3-prefix backend \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              Env="${{ vars.APP_ENV }}" \
+              DatabaseUrl="${{ secrets.DATABASE_URL }}" \
+              SecretKey="${{ secrets.APP_SECRET_KEY }}" \
+              CorsOrigins="${{ vars.CORS_ORIGINS }}" \
+              FrontendBaseUrl="${{ vars.FRONTEND_BASE_URL }}"
+
+      - name: Show the API URL and check it answers
+        run: |
+          URL=$(aws cloudformation describe-stacks \
+            --stack-name "${{ vars.STACK_NAME }}" \
+            --region "${{ vars.AWS_REGION }}" \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text)
+          echo "API: $URL"
+          curl --fail --silent --show-error "${URL%/}/health"
+          echo "### Deployed: ${URL%/}" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,115 @@
+# Sibling of backend.yml. Same monorepo pattern: `paths` keeps this job out of
+# backend and documentation changes, `working-directory` pins every step to the
+# Vite project.
+name: Frontend
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "LifeCare-FrontEnd/vite/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    paths:
+      - "LifeCare-FrontEnd/vite/**"
+      - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: LifeCare-FrontEnd/vite
+
+concurrency:
+  group: frontend-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: yarn
+          cache-dependency-path: LifeCare-FrontEnd/vite/yarn.lock
+      - run: yarn install --frozen-lockfile
+      - run: yarn test
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: yarn
+          cache-dependency-path: LifeCare-FrontEnd/vite/yarn.lock
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # The bucket and distribution are described in template.yaml next to this
+      # project. Creating the distribution takes ~10 minutes the first time;
+      # every run after that is a no-op costing a few seconds.
+      - name: Deploy the CloudFront stack
+        run: |
+          aws cloudformation deploy \
+            --template-file template.yaml \
+            --stack-name "${{ vars.FRONTEND_STACK_NAME }}" \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              SiteBucket="${{ vars.ARTIFACT_BUCKET }}" \
+              SitePrefix=frontend
+
+      - name: Read the stack outputs
+        id: stack
+        run: |
+          read_output() {
+            aws cloudformation describe-stacks \
+              --stack-name "${{ vars.FRONTEND_STACK_NAME }}" \
+              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
+          }
+          {
+            echo "distribution=$(read_output DistributionId)"
+            echo "url=$(read_output SiteUrl)"
+          } >> "$GITHUB_OUTPUT"
+
+      # Vite inlines VITE_* variables at build time, so the API URL has to be
+      # present here rather than at runtime.
+      - name: Build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      # Two passes: hashed assets get a long cache, index.html must never be
+      # cached or browsers keep loading the previous release's asset names.
+      # --delete is confined to the frontend/ prefix, so the backend's Lambda
+      # artifacts in the same bucket are never touched.
+      - name: Upload
+        env:
+          DEST: s3://${{ vars.ARTIFACT_BUCKET }}/frontend
+        run: |
+          aws s3 sync build/ "$DEST/" \
+            --delete --exclude index.html --cache-control "public,max-age=31536000,immutable"
+          aws s3 cp build/index.html "$DEST/index.html" --cache-control "no-cache"
+
+      # One path per deploy. The first 1,000 a month are free.
+      - name: Invalidate the CDN cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.stack.outputs.distribution }}" \
+            --paths "/*" --query 'Invalidation.Id' --output text
+
+      - name: Report
+        run: |
+          echo "### Deployed: ${{ steps.stack.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

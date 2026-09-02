@@ -1,0 +1,233 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  One-time bootstrap: lets GitHub Actions deploy both stacks - the backend
+  (LifeCare-BackEnd/python/template.yaml) and the frontend
+  (LifeCare-FrontEnd/vite/template.yaml) - without any long-lived AWS key. GitHub hands the workflow a short-lived OIDC token,
+  AWS trades it for 15-minute credentials, and nothing is ever stored in the
+  repository. Deploy this once by hand; CI never touches it again.
+  Creates only IAM resources, which are free.
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: 15aniruddh/LifeCare-Portal
+    Description: owner/repo. The role can only be assumed from this repository.
+  DeployBranch:
+    Type: String
+    Default: master
+    Description: >
+      Only workflows running on this branch may assume the role. A pull request
+      from a fork therefore cannot deploy, which is the point.
+  StackName:
+    Type: String
+    Default: lifecare-api
+    Description: >
+      The application stack this role may manage. The policy below is scoped to
+      resources whose names start with it, so it must match the --stack-name the
+      workflow passes.
+  FrontendStackName:
+    Type: String
+    Default: lifecare-web
+    Description: The CloudFront stack. Must match FRONTEND_STACK_NAME in the workflow.
+  ArtifactBucket:
+    Type: String
+    Default: lifecare-portal-635738234790-ap-south-2-an
+    Description: >
+      The one bucket both pipelines use: Lambda deployment zips under backend/,
+      the built site under frontend/. Nothing here may touch any other bucket.
+  BackendPrefix:
+    Type: String
+    Default: backend
+  FrontendPrefix:
+    Type: String
+    Default: frontend
+  CreateOidcProvider:
+    Type: String
+    Default: "yes"
+    AllowedValues: ["yes", "no"]
+    Description: >
+      An AWS account may only have one provider per URL. Set to "no" if you have
+      already connected GitHub Actions to this account for another project,
+      otherwise the stack fails with EntityAlreadyExists.
+
+Conditions:
+  NeedsProvider: !Equals [!Ref CreateOidcProvider, "yes"]
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: NeedsProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+      # AWS stopped verifying this for GitHub in 2023 but still accepts it.
+      ThumbprintList: [6938fd4d98bab03faadb97b34396831e3780aea1]
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${StackName}-github-deploy"
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                # Pins the repo AND the branch. Without the sub condition, any
+                # GitHub repository in the world could assume this role.
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubRepo}:ref:refs/heads/${DeployBranch}"
+      Policies:
+        - PolicyName: deploy-the-api-stack
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: DriveTheStacks
+                Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResource
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:ListStackResources
+                  - cloudformation:GetTemplate
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:ListChangeSets
+                Resource:
+                  - !Sub "arn:aws:cloudformation:*:${AWS::AccountId}:stack/${StackName}/*"
+                  - !Sub "arn:aws:cloudformation:*:${AWS::AccountId}:stack/${FrontendStackName}/*"
+
+              - Sid: ExpandTheSamTransform
+                Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: arn:aws:cloudformation:*:aws:transform/Serverless-2016-10-31
+
+              - Sid: ValidateTemplateBodies
+                # These act on a template you submit, not on a stack, so they
+                # cannot be scoped to a resource ARN.
+                Effect: Allow
+                Action:
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStacks
+                Resource: "*"
+
+              - Sid: ListTheSharedBucket
+                # s3:ListBucket is a bucket-level action; the prefix conditions
+                # stop it from enumerating anything outside the two folders.
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource: !Sub "arn:aws:s3:::${ArtifactBucket}"
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - !Sub "${BackendPrefix}/*"
+                      - !Sub "${FrontendPrefix}/*"
+                      - ""
+
+              - Sid: BackendDeploymentArtifacts
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub "arn:aws:s3:::${ArtifactBucket}/${BackendPrefix}/*"
+
+              - Sid: FrontendSiteFiles
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub "arn:aws:s3:::${ArtifactBucket}/${FrontendPrefix}/*"
+
+              - Sid: TheBucketPolicy
+                # The frontend stack attaches the CloudFront read policy. Scoped
+                # to this bucket alone, so CI cannot open up any other bucket.
+                Effect: Allow
+                Action:
+                  - s3:GetBucketPolicy
+                  - s3:PutBucketPolicy
+                  - s3:DeleteBucketPolicy
+                Resource: !Sub "arn:aws:s3:::${ArtifactBucket}"
+
+              - Sid: TheFunctionItself
+                Effect: Allow
+                Action: lambda:*
+                Resource: !Sub "arn:aws:lambda:*:${AWS::AccountId}:function:${StackName}-*"
+
+              - Sid: TheFunctionsExecutionRole
+                # CloudFormation creates and passes the Lambda's own role. Scoped
+                # to the stack's name prefix so this cannot mint arbitrary roles.
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
+                  - iam:ListAttachedRolePolicies
+                  - iam:UpdateAssumeRolePolicy
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/${StackName}-*"
+
+              - Sid: TheLogGroup
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:PutRetentionPolicy
+                  - logs:DeleteRetentionPolicy
+                  - logs:TagResource
+                  - logs:UntagResource
+                  - logs:ListTagsForResource
+                Resource: !Sub "arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/lambda/${StackName}-*"
+
+              - Sid: TheCdn
+                # CloudFront distributions are addressed by generated id, so
+                # there is no name prefix to scope these to.
+                Effect: Allow
+                Action:
+                  - cloudfront:CreateDistribution
+                  - cloudfront:GetDistribution
+                  - cloudfront:GetDistributionConfig
+                  - cloudfront:UpdateDistribution
+                  - cloudfront:DeleteDistribution
+                  - cloudfront:CreateOriginAccessControl
+                  - cloudfront:GetOriginAccessControl
+                  - cloudfront:GetOriginAccessControlConfig
+                  - cloudfront:UpdateOriginAccessControl
+                  - cloudfront:DeleteOriginAccessControl
+                  - cloudfront:CreateInvalidation
+                  - cloudfront:GetInvalidation
+                  - cloudfront:TagResource
+                  - cloudfront:ListTagsForResource
+                Resource: "*"
+
+              - Sid: ReadLogGroups
+                # DescribeLogGroups has no resource-level permissions.
+                Effect: Allow
+                Action: logs:DescribeLogGroups
+                Resource: "*"
+
+Outputs:
+  DeployRoleArn:
+    Description: Put this in the GitHub repository variable AWS_DEPLOY_ROLE_ARN.
+    Value: !GetAtt DeployRole.Arn

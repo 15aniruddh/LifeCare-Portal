@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  LifeCare Portal API - the whole FastAPI app on one Lambda function.
+  Designed to sit inside the AWS free tier: no EC2, no NAT gateway, no ECR,
+  no API Gateway, no provisioned concurrency. Nothing here bills while idle.
+  Deployed by .github/workflows/backend.yml on every push to master.
+
+Parameters:
+  Env:
+    Type: String
+    Default: production
+    AllowedValues: [dev, staging, production]
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+    Description: >
+      postgresql://user:pass@host/lifecare?sslmode=require - use a serverless
+      Postgres that scales to zero (Neon, Supabase). RDS is billed per hour
+      whether or not anyone calls the API.
+  SecretKey:
+    Type: String
+    NoEcho: true
+    Description: JWT signing key, 32+ random characters.
+  CorsOrigins:
+    Type: String
+    Description: Comma-separated frontend origins. "*" is refused when Env is staging/production.
+  FrontendBaseUrl:
+    Type: String
+    Default: http://localhost:3000
+  MaxConcurrency:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    Description: >
+      Hard ceiling on simultaneous executions. The Function URL is public, so
+      this is the cap on how fast a bad actor - or a loop in the frontend - can
+      spend money. Excess requests get a 429 instead of a bill. Raise it when
+      real traffic needs it.
+  LogRetentionDays:
+    Type: Number
+    Default: 7
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90]
+    Description: >
+      Lambda's default is "never expire", which bills for stored logs forever.
+
+Resources:
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      # Build with the Makefile target below rather than a requirements.txt, so
+      # pyproject.toml stays the single list of dependencies.
+      BuildMethod: makefile
+    Properties:
+      # A zip package, not a container image: images live in ECR, which bills
+      # for storage per GB-month and keeps every version you ever deployed.
+      # A zip is stored in S3 for a few cents a year.
+      PackageType: Zip
+      CodeUri: .
+      Handler: app.lambda_handler.handler
+      Runtime: python3.12
+      # Graviton - 20% cheaper per GB-second than x86, same code.
+      Architectures: [arm64]
+      # Lambda scales CPU with memory, and you are billed memory x duration.
+      # Most requests here wait on Postgres rather than the CPU, so more memory
+      # would cost more without finishing sooner. Raise it only if logins (bcrypt,
+      # the one CPU-bound path) feel slow.
+      MemorySize: 512
+      # A ceiling, not a target - you are billed for actual duration. It exists
+      # so a wedged request stops at 15s instead of burning the full 15 minutes.
+      Timeout: 15
+      ReservedConcurrentExecutions: !Ref MaxConcurrency
+      Environment:
+        Variables:
+          ENV: !Ref Env
+          DATABASE_URL: !Ref DatabaseUrl
+          SECRET_KEY: !Ref SecretKey
+          CORS_ORIGINS: !Ref CorsOrigins
+          FRONTEND_BASE_URL: !Ref FrontendBaseUrl
+          LOG_JSON: "true"
+      # A Function URL is free; API Gateway would add ~$1 per million requests
+      # and a REST API's minimum charges on top of Lambda's own.
+      # CORS is handled by the app's own middleware, so none is configured here -
+      # two layers would emit duplicate Access-Control-Allow-Origin headers.
+      FunctionUrlConfig:
+        AuthType: NONE
+
+  # Declared explicitly only to set retention. Left implicit, Lambda creates
+  # this group with "Never expire" and you pay to store logs indefinitely.
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ApiFunction}"
+      RetentionInDays: !Ref LogRetentionDays
+
+Outputs:
+  ApiUrl:
+    Description: Base URL of the API. Point the frontend's API base URL here.
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl

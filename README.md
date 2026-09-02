@@ -30,6 +30,18 @@ The Python backend is a port of the Java one; the two are not run together.
 **Each app has its own README with full setup instructions** — this page is only
 the map.
 
+`.github/workflows/` holds one pipeline per deployable app, each filtered by
+path, so a change under `LifeCare-Documentation/` deploys nothing and a frontend
+change never rebuilds the backend:
+
+| Workflow | Triggered by | Deploys to |
+| --- | --- | --- |
+| `backend.yml` | `LifeCare-BackEnd/python/**` | AWS Lambda + Function URL |
+| `frontend.yml` | `LifeCare-FrontEnd/vite/**` | S3 + CloudFront |
+
+Both authenticate to AWS with a short-lived OIDC token rather than a stored
+access key. Setup is in the [backend README](LifeCare-BackEnd/python/README.md#continuous-deployment-from-github).
+
 | Component | Stack | Docs |
 | --------- | ----- | ---- |
 | Frontend | React 19, Vite 7, React Router 7, Bootstrap 5, Vitest | [`LifeCare-FrontEnd/vite/README.md`](LifeCare-FrontEnd/vite/README.md) |

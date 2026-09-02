@@ -3,7 +3,7 @@ VENV := .venv
 PY   := $(VENV)/bin/python
 PIP  := $(VENV)/bin/pip
 
-.PHONY: help venv install run test lint format typecheck migrate revision seed-admin seed-dev db-up db-down db-shell db-reset docker-up docker-down clean
+.PHONY: help venv install run test lint format typecheck migrate revision seed-admin seed-dev db-up db-down db-shell db-reset sam-build sam-deploy build-ApiFunction clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -59,12 +59,22 @@ db-reset: ## Destroy the database volume, recreate it, migrate and re-seed
 	$(VENV)/bin/alembic upgrade head
 	$(PY) scripts/seed_dev_data.py
 
-docker-up: ## Start Postgres + the API in Docker
-	docker compose up --build -d
+sam-build: ## Build the Lambda deployment package
+	sam build --use-container
 
-docker-down: ## Stop the Docker stack
-	docker compose down
+# Same bucket and prefix CI uses, so a manual deploy cannot strand artifacts
+# somewhere the deploy role has no permission to clean up.
+ARTIFACT_BUCKET ?= lifecare-portal-635738234790-ap-south-2-an
+
+sam-deploy: ## Deploy to AWS Lambda (first run: prompts for the parameters)
+	sam deploy --guided --s3-bucket $(ARTIFACT_BUCKET) --s3-prefix backend
+
+# Called by `sam build` inside the Lambda build image, not by hand. The target
+# name must stay in sync with the ApiFunction logical id in template.yaml.
+# Plain `pip`, not $(PIP): there is no .venv inside the build container.
+build-ApiFunction:
+	pip install . -t "$(ARTIFACTS_DIR)"
 
 clean: ## Remove caches and build artefacts
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
-	rm -rf .pytest_cache .mypy_cache .ruff_cache dist build *.egg-info
+	rm -rf .pytest_cache .mypy_cache .ruff_cache .aws-sam dist build *.egg-info

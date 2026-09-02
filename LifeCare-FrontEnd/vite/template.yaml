@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  LifeCare Portal frontend - CloudFront in front of the frontend/ prefix of the
+  shared project bucket. CloudFront's always-free tier covers 1 TB/month out and
+  10M requests, and the built site is a few MB of S3 storage, so this is
+  effectively $0. No WAF, no access logging, no Route 53 hosted zone - each of
+  those bills monthly. Deployed by .github/workflows/frontend.yml.
+
+Parameters:
+  SiteBucket:
+    Type: String
+    Default: lifecare-portal-635738234790-ap-south-2-an
+    Description: >
+      The shared bucket. This stack does not create it - it only attaches a
+      policy and points CloudFront at it. Must live in the same region as this
+      stack, since the origin hostname is built from ${AWS::Region}.
+  SitePrefix:
+    Type: String
+    Default: frontend
+    Description: >
+      Folder inside the bucket holding the built site. The backend's Lambda
+      artifacts live under a sibling prefix and are never exposed by CloudFront,
+      which can only read below the OriginPath set from this value.
+
+Resources:
+  # Lets this one distribution - and nothing else - read the bucket.
+  SiteOac:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      # A bucket has exactly one policy document, so this stack owns it outright:
+      # anything you add by hand in the console will be replaced on the next
+      # deploy. Read access is granted only under the site prefix, so the
+      # backend's deployment artifacts stay unreadable through the CDN.
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: CloudFrontReadsTheSiteOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${SiteBucket}/${SitePrefix}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${SiteDistribution}"
+
+  SiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        # 200 includes the Indian and South-East Asian edges; 100 (the cheapest)
+        # does not. Below the free tier the difference is academic either way.
+        PriceClass: PriceClass_200
+        Origins:
+          - Id: s3-site
+            # Regional endpoint, not the global one: the global form 307-redirects
+            # for buckets outside us-east-1, which OAC signing does not survive.
+            DomainName: !Sub "${SiteBucket}.s3.${AWS::Region}.amazonaws.com"
+            # Every request is served from below this prefix. A viewer asking for
+            # /backend/... gets the SPA shell, not a deployment artifact.
+            OriginPath: !Sub "/${SitePrefix}"
+            OriginAccessControlId: !GetAtt SiteOac.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: s3-site
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          # AWS-managed "CachingOptimized". Managed policies cost nothing, and
+          # each deploy invalidates /* anyway (1,000 paths a month are free).
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        # React Router owns the URLs, but S3 has no file at /login or /admin and
+        # answers 403 to a private bucket. Rewrite both to the SPA shell. Doing
+        # it here is free; a CloudFront Function would be metered.
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 10
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 10
+        ViewerCertificate:
+          # The default *.cloudfront.net certificate, which is free. A custom
+          # domain needs an ACM cert (also free) plus a Route 53 hosted zone,
+          # which is $0.50/month - the only recurring charge this stack avoids.
+          CloudFrontDefaultCertificate: true
+
+Outputs:
+  SiteUrl:
+    Description: Public URL. Use this as the backend's CorsOrigins and FrontendBaseUrl.
+    Value: !Sub "https://${SiteDistribution.DomainName}"
+  UploadTarget:
+    Description: Where the workflow syncs the built site.
+    Value: !Sub "s3://${SiteBucket}/${SitePrefix}/"
+  DistributionId:
+    Value: !Ref SiteDistribution

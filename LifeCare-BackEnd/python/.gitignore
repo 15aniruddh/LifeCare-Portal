@@ -15,3 +15,7 @@ dist/
 build/
 *.db
 *.sqlite3
+.aws-sam/
+# `sam deploy --guided` writes the answers here, including DatabaseUrl and
+# SecretKey in plaintext. Never commit it.
+samconfig.toml

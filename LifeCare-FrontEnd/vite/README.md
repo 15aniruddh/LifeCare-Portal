@@ -237,7 +237,8 @@ What that changed in this repo, if you are reading old branches or docs:
   `vi.hoisted(...)` because `vi.mock` calls are hoisted above the file body.
   Vitest has no automock, so `vi.mock("…/LoginApi")` spells out the stub.
 * The build still writes to **`build/`** (Vite's default is `dist/`), set in
-  `vite.config.js` so the `Dockerfile` and `nginx.conf` needed no path changes.
+  `vite.config.js` to match what CRA produced. The deploy workflow syncs that
+  directory.
 * JSX lives in `.js` files, which Vite does not assume. `vite.config.js` tells
   esbuild to parse them as JSX rather than renaming 47 files to `.jsx`.
 * CRA's built-in ESLint is gone with it. There is no linter wired up today; add
@@ -286,11 +287,91 @@ gzipped). Check it locally before shipping:
 corepack yarn preview
 ```
 
-Because this is a single-page app, the host must rewrite unknown paths to
-`index.html` — otherwise refreshing on `/userdashboard` returns a 404. The
-bundled `Dockerfile` and `nginx.conf` already do this:
+Because this is a single-page app, whatever serves `build/` must rewrite unknown
+paths to `index.html` — otherwise refreshing on `/userdashboard` returns a 404.
+CloudFront does this for the real deployment; see below.
+
+---
+
+## Deploying to AWS (S3 + CloudFront)
+
+`template.yaml` in this folder describes the hosting setup: a CloudFront
+distribution reading the `frontend/` prefix of the shared project bucket
+(`lifecare-portal-635738234790-ap-south-2-an`) over Origin Access Control. The
+bucket stays private — nothing is served except through the CDN.
+
+The stack does **not** create the bucket; it only attaches a policy and points
+CloudFront at it. That policy grants read on `frontend/*` and nothing else, and
+the origin's `OriginPath` is `/frontend`, so the backend's Lambda zips in
+`backend/` cannot be reached through the distribution. Note that a bucket has
+exactly one policy document, so this stack owns it outright — a rule added by
+hand in the console is replaced on the next deploy.
+
+CloudFront's always-free tier covers 1 TB/month of transfer and 10M requests,
+and the built bundle is a few MB of S3 storage, so this costs effectively
+nothing. No WAF, no access logs, no Route 53 hosted zone — each of those bills
+monthly and none is needed.
+
+SPA routing is handled the free way: CloudFront rewrites 403 and 404 to
+`/index.html` with a 200, so refreshing on `/userdashboard` works.
+
+### It deploys itself
+
+`.github/workflows/frontend.yml` (at the **repository root**) runs on every push
+to `master` that touches `LifeCare-FrontEnd/vite/**`. Backend-only and
+documentation-only pushes do not trigger it.
+
+Each run: `yarn test` → create/update the stack → `yarn build` → sync to
+`s3://lifecare-portal-635738234790-ap-south-2-an/frontend/` → invalidate the CDN.
+The sync's `--delete` is scoped to that prefix, so the backend's artifacts in the
+same bucket are never touched.
+
+The upload is two passes on purpose. Hashed assets get
+`max-age=31536000,immutable`; `index.html` gets `no-cache`. Cache it and
+browsers keep asking for the previous release's asset filenames.
+
+Setup is the [shared one-time OIDC role](../../LifeCare-BackEnd/python/README.md#continuous-deployment-from-github)
+plus these repository variables:
+
+| Kind | Name | Value |
+|---|---|---|
+| Variable | `FRONTEND_STACK_NAME` | `lifecare-web` |
+| Variable | `ARTIFACT_BUCKET` | `lifecare-portal-635738234790-ap-south-2-an` (shared with the backend) |
+| Variable | `VITE_API_BASE_URL` | the backend's Lambda Function URL, no trailing slash |
+
+`AWS_REGION` must be `ap-south-2`: the origin hostname is built from the stack's
+region, so the stack has to sit where the bucket does.
+
+`VITE_API_BASE_URL` is read at **build time** — Vite inlines it into the bundle.
+Changing it needs a rebuild, which is why it is a workflow variable rather than
+anything runtime.
+
+### First deploy: the two URLs reference each other
+
+The backend needs the site's origin for CORS; the frontend needs the backend's
+URL. Neither exists yet, so go round once:
+
+1. Deploy the backend with `APP_ENV=dev` (which relaxes the CORS check). Note
+   its Function URL.
+2. Set `VITE_API_BASE_URL` to that, and run this workflow. Creating the
+   CloudFront distribution takes ~10 minutes the first time. Note the
+   `https://xxxx.cloudfront.net` it prints.
+3. Set the backend's `CORS_ORIGINS` and `FRONTEND_BASE_URL` to that address and
+   `APP_ENV` to `production`, then re-run the backend workflow.
+
+From then on both pipelines are independent.
+
+### Deleting it
+
+The bucket is shared and not owned by this stack, so deleting the stack leaves
+the files in place. Remove them separately if you want to:
 
 ```bash
-docker build --build-arg VITE_API_BASE_URL=https://api.example.com -t lifecare-frontend .
-docker run -p 8080:80 lifecare-frontend
+aws cloudformation delete-stack --stack-name lifecare-web
+aws s3 rm s3://lifecare-portal-635738234790-ap-south-2-an/frontend --recursive
 ```
+
+Disabling and removing a CloudFront distribution takes AWS several minutes; the
+stack sits in `DELETE_IN_PROGRESS` until it finishes. Deleting the stack also
+drops the bucket policy, which is what was granting CloudFront its read access —
+harmless once the distribution is gone.
