@@ -4,7 +4,7 @@ A production-oriented migration of the original Spring Boot service
 (`../java`) to **FastAPI + PostgreSQL**.
 
 Every route, path and JSON field name matches the Spring API. The React
-frontend in `../../LifeCare-FrontEnd/react` talks to it and already sends the JWT
+frontend in `../../LifeCare-FrontEnd/vite` talks to it and already sends the JWT
 that `POST /login/userlogin` returns — see
 [How the frontend authenticates](#how-the-frontend-authenticates).
 
@@ -145,7 +145,7 @@ curl http://localhost:9091/hospital/all    # the 3 seeded hospitals
 
 The startup log should include `Database connection verified`.
 
-Now start the frontend — see `../../LifeCare-FrontEnd/react/README.md`.
+Now start the frontend — see `../../LifeCare-FrontEnd/vite/README.md`.
 
 ### Option B — local Postgres in Docker
 
@@ -195,6 +195,7 @@ Run `make migrate` after switching — each database needs its own schema.
 | `connection refused` on startup | Local Postgres is not running → `make db-up`, or you meant to set `DATABASE_URL` |
 | `password authentication failed` | Wrong credentials in `.env` |
 | `sslmode is an invalid keyword argument` | An old `DATABASE_URL` reaching the driver untranslated — pull the latest `app/core/config.py` |
+| Startup hangs ~60 s, then `TimeoutError`, on a hosted database | Your network blackholes IPv6 and the driver tries the provider's AAAA records first. See [IPv6 and hosted Postgres](#ipv6-and-hosted-postgres) |
 | `Address already in use` on 9091 | Something else holds the port → `lsof -ti:9091 \| xargs kill` |
 | Tables missing / `relation does not exist` | `make migrate` was not run against *this* database |
 | Frontend shows no data | Run `make seed-dev`, and confirm the API answers on 9091 |
@@ -299,13 +300,13 @@ Interactive docs: <http://localhost:9091/docs> (disabled when `ENV=production`).
 
 ### How the frontend authenticates
 
-This is already wired up in `../../LifeCare-FrontEnd/react`; the notes below are
+This is already wired up in `../../LifeCare-FrontEnd/vite`; the notes below are
 for reference.
 
 `POST /login/userlogin` returns `{id, name, role, access_token, …}`. The React
 app stores the whole response in `sessionStorage` under its role key
 (`admin` / `hospital` / `user`), and
-`src/components/service/httpAuth.js` installs two axios interceptors from
+`src/services/httpAuth.js` installs two axios interceptors from
 `index.js`:
 
 * a **request** interceptor that attaches `Authorization: Bearer <token>` to
@@ -414,6 +415,38 @@ Dropping `channel_binding` does **not** weaken the connection — `ssl=require`
 still enforces TLS. Practically, this means you can paste a Neon, Supabase or
 RDS URL verbatim and it will work.
 
+### IPv6 and hosted Postgres
+
+Neon (and most managed providers) publish both AAAA and A records. On a network
+with no working IPv6 route to them, asyncpg tries the IPv6 addresses first and
+each connection attempt burns a full timeout — the API starts but every query
+stalls, and `alembic` hangs.
+
+Confirm it before working around it:
+
+```bash
+nc -4 -z -G 6 <your-host> 5432   # succeeds
+nc -6 -z -G 6 <your-host> 5432   # times out  → this is the problem
+```
+
+The workaround, applied entirely in `.env` with no code change, is to connect
+to an IPv4 address directly and move the endpoint id into the password — the
+fallback Neon documents for clients that cannot do TLS SNI, which is what you
+lose by dialling an IP instead of a hostname:
+
+```ini
+# was: postgresql://USER:PASS@ep-xxx-pooler.REGION.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+DATABASE_URL=postgresql://USER:endpoint%3Dep-xxx%3BPASS@<ipv4>:5432/neondb?sslmode=require
+```
+
+`%3D` is `=` and `%3B` is `;`, URL-encoded so the URL parser keeps them inside
+the password. `sslmode=require` encrypts without verifying the hostname, so the
+IP does not break TLS.
+
+**This pins an IP that the provider can rotate.** The committed `.env` carries
+the original hostname URL on a commented line directly above — restore it once
+IPv6 works, or when the pinned address stops answering.
+
 ### Migrations
 
 ```bash
@@ -468,10 +501,11 @@ On startup in `staging`/`production` the app refuses to boot with a default
 ## Development
 
 ```bash
-make test        # pytest
+make test        # pytest — 59 tests
 make lint        # ruff
 make format      # ruff --fix + format
 make typecheck   # mypy
+make clean       # drop __pycache__, .pytest_cache, .mypy_cache, .ruff_cache, *.egg-info
 ```
 
 Tests run against in-memory SQLite, so no database is needed. The Alembic

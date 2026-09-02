@@ -17,13 +17,20 @@ account; booking a bed requires signing in.
 
 | Concern | Choice |
 | ------- | ------ |
-| Framework | React 19 (Create React App / `react-scripts` 5) |
+| Framework | React 19 |
+| Build tool | **Vite 7** (`@vitejs/plugin-react`) |
+| Tests | **Vitest 3** + Testing Library, jsdom environment — 25 tests |
 | Routing | React Router 7 |
-| Styling | Bootstrap 5 + React-Bootstrap, over a custom design system in `src/index.css` |
-| HTTP | axios, with auth interceptors in `src/components/service/httpAuth.js` |
+| Styling | Bootstrap 5 over a custom design system in `src/index.css` |
+| HTTP | axios, with auth interceptors in `src/services/httpAuth.js` |
 | Dialogs | SweetAlert2 |
+| Images | WebP throughout `src/assets/images/` |
 | Fonts | Plus Jakarta Sans (Google Fonts) |
 | Package manager | Yarn (a `yarn.lock` is committed) |
+
+> **Migrated off Create React App.** This app used to build with
+> `react-scripts` 5. See [Why Vite](#why-vite-and-what-changed) for what that
+> changed and why.
 
 ---
 
@@ -40,10 +47,10 @@ account; booking a bed requires signing in.
 ### 1. Open a terminal in this folder
 
 ```bash
-cd LifeCare-Portal/LifeCare-FrontEnd/react
+cd LifeCare-Portal/LifeCare-FrontEnd/vite
 ```
 
-> Note the `react` subfolder — the app lives one level below `LifeCare-FrontEnd`.
+> Note the `vite` subfolder — the app lives one level below `LifeCare-FrontEnd`.
 
 ### 2. Install dependencies
 
@@ -51,15 +58,16 @@ cd LifeCare-Portal/LifeCare-FrontEnd/react
 corepack yarn install
 ```
 
-Takes roughly 30 seconds and creates `node_modules/`. Peer-dependency warnings
-are expected and harmless.
+Takes roughly 20 seconds and creates `node_modules/`. One peer-dependency
+warning from Bootstrap is expected and harmless.
 
 <details>
 <summary>Prefer plain <code>yarn</code> or <code>npm</code>?</summary>
 
 Run `corepack enable` once and `yarn` works on its own afterwards. `npm install`
 also works, but it ignores `yarn.lock` and resolves its own dependency tree —
-stick to Yarn to get the versions this app was built against.
+stick to Yarn to get the versions this app was built against, and because
+`yarn.lock` is what Dependabot scans.
 </details>
 
 ### 3. Start the dev server
@@ -68,9 +76,11 @@ stick to Yarn to get the versions this app was built against.
 corepack yarn start
 ```
 
-It compiles, prints `Compiled successfully!`, and opens
-**<http://localhost:3000>**. Hot reload is on — saving a file refreshes the
-browser. Stop it with `Ctrl+C`.
+Vite is ready in well under a second and serves
+**<http://localhost:3000>**. Hot Module Replacement is on — saving a file
+updates the browser without a full reload. Stop it with `Ctrl+C`.
+
+> Vite does not open a browser tab by itself, unlike CRA. Click the printed URL.
 
 ### 4. Check it works
 
@@ -101,33 +111,40 @@ including a lowercase letter, a number and a special character.
 
 | Command | What it does |
 | ------- | ------------ |
-| `corepack yarn start` | Dev server with hot reload on :3000 |
+| `corepack yarn start` | Dev server with HMR on :3000 |
 | `corepack yarn build` | Production bundle into `build/` |
-| `corepack yarn test` | Jest in watch mode (no test suite ships today) |
-| `corepack yarn eject` | **One-way.** Copies the CRA build config into the repo. Avoid unless you have to. |
+| `corepack yarn preview` | Serve the built bundle locally, to check it before deploying |
+| `corepack yarn test` | Vitest, single run — 25 tests across 3 files |
+
+Add `--watch` to the test command (`corepack yarn test --watch`) to re-run on
+save.
 
 ---
 
 ## Pointing at a different backend
 
-The API base URL is currently hard-coded in each service file under
-`src/components/service/`:
+The API base URL lives in **one** place, `src/services/apiConfig.js`, which
+reads it from the environment:
 
 ```js
-const HOSPITAL_API_BASE_URL = "http://localhost:9091/hospital";
+export const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:9091"
+).replace(/\/+$/, "");
 ```
 
-To target a deployed backend, change those constants — or, better, replace them
-with an environment variable. CRA exposes any variable prefixed `REACT_APP_`:
+Set it in `.env` (this folder; gitignored — `.env.example` is the committed
+template):
 
 ```bash
-# .env.local  (gitignored; restart the dev server after changing it)
-REACT_APP_API_URL=https://api.example.com
+VITE_API_BASE_URL=https://api.example.com
 ```
 
-```js
-const API = process.env.REACT_APP_API_URL || "http://localhost:9091";
-```
+Two things to know:
+
+* **Only variables prefixed `VITE_` are exposed** to the app. A variable
+  without that prefix is silently invisible to the browser bundle.
+* The value is **baked in at build time**, not read at runtime. Restart the dev
+  server after editing `.env`, and rebuild after changing it for production.
 
 Whatever host you use must allow this origin — set `CORS_ORIGINS` in the
 backend's `.env` (it defaults to `http://localhost:3000`).
@@ -137,30 +154,39 @@ backend's `.env` (it defaults to `http://localhost:3000`).
 ## Project structure
 
 ```
-react/
-├── public/
-│   └── index.html              # loads Google Fonts, sets the page title
+vite/
+├── index.html                  # entry HTML — at the project ROOT, not in public/
+├── vite.config.js              # plugins, dev server port, build output, test config
+├── public/                     # copied verbatim to the build root
+│   ├── favicon.ico
+│   ├── manifest.json
+│   └── robots.txt
 └── src/
     ├── index.js                # entry point: router, app shell, auth interceptors
     ├── index.css               # design tokens, typography, buttons, forms, tables
     ├── App.css                 # navbar, hero, cards, footer, dashboards
     ├── App.js                  # every route
+    ├── setupTests.js           # loads jest-dom matchers for Vitest
+    ├── assets/images/          # WebP images
+    ├── services/               # axios API clients + httpAuth interceptors
+    │   ├── apiConfig.js        # single source of truth for the API base URL
+    │   └── httpAuth.js         # session store + bearer/401 interceptors
     └── components/
         ├── common/             # shared UI
         │   ├── Header.js       # responsive navbar, role-aware
         │   ├── Footer.js
         │   ├── Home.js  About.js  Contact.js
         │   ├── HospitalDirectory.js   # list hospitals → drill into one
+        │   ├── HospitalStatsPage.js   # a hospital's own published numbers
         │   ├── DashboardShell.js      # banner + action grid + auth guard
         │   ├── DataTable.js           # table in a card, with empty states
         │   ├── Icons.js               # inline SVG icon set
+        │   ├── labels.js              # shared display labels for API codes
         │   └── contactDetails.js      # single source of truth for address/email
-        ├── auth/               # Login, Usersignup
+        ├── auth/               # Login, Usersignup, GoogleCallback (+ tests)
         ├── admin/              # hospital + user management
         ├── hospital/           # publish availability, action requests
-        ├── user/               # browse availability, book, track requests
-        ├── service/            # axios API clients + httpAuth interceptors
-        └── images/
+        └── user/               # browse availability, book, track requests
 ```
 
 ### How authentication works
@@ -180,20 +206,70 @@ hospital screen do.
 
 ---
 
+## Why Vite, and what changed
+
+The app was built with Create React App (`react-scripts` 5.0.1) until it
+accumulated **144 open Dependabot alerts**. Almost none of them were fixable:
+`react-scripts` 5.0.1 is the last release CRA ever shipped, and 342 of the 346
+advisory paths came from its build-time dependency tree. `npm audit fix --force`
+"resolved" it by proposing `react-scripts@0.0.0`.
+
+Replacing the build tool removed the whole tree at once. The audit now reports
+**0 vulnerabilities**.
+
+| | Before (CRA) | After (Vite) |
+| --- | --- | --- |
+| Dependabot alerts | 144 | **0** |
+| Packages in `node_modules` | ~900 | **140** |
+| Dev server start | ~10 s | **~0.1 s** |
+| Production build | ~15 s | **~0.6 s** |
+
+What that changed in this repo, if you are reading old branches or docs:
+
+* `public/index.html` moved to **`index.html` at the project root**, and gained
+  an explicit `<script type="module" src="/src/index.js">`. `%PUBLIC_URL%` is
+  gone — reference `public/` files with a plain absolute path (`/manifest.json`).
+* **`process.env.REACT_APP_*` → `import.meta.env.VITE_*`.** If you set the API
+  URL anywhere outside this folder (CI, a deploy config), rename it there too or
+  the app silently falls back to `localhost:9091`.
+* **Jest → Vitest.** `jest.fn` is `vi.fn`, `jest.requireActual` is
+  `vi.importActual`, and a mock factory that needs a spy declares it with
+  `vi.hoisted(...)` because `vi.mock` calls are hoisted above the file body.
+  Vitest has no automock, so `vi.mock("…/LoginApi")` spells out the stub.
+* The build still writes to **`build/`** (Vite's default is `dist/`), set in
+  `vite.config.js` so the `Dockerfile` and `nginx.conf` needed no path changes.
+* JSX lives in `.js` files, which Vite does not assume. `vite.config.js` tells
+  esbuild to parse them as JSX rather than renaming 47 files to `.jsx`.
+* CRA's built-in ESLint is gone with it. There is no linter wired up today; add
+  `eslint` + `eslint-plugin-react-hooks` if you want that back.
+
+### Images are WebP
+
+Every image under `src/assets/images/` is WebP, imported by ES import:
+
+```js
+import logo from "../../assets/images/logo.webp";
+```
+
+This cut the image payload from **2.5 MB to 560 KB (−78%)** — encoded at q82
+(photos) and q85 with full-quality alpha (images with transparency), measuring
+44–57 dB PSNR, i.e. visually lossless. WebP is supported by every browser this
+app targets. `public/favicon.ico` stays `.ico` by design.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause and fix |
 | ------- | ------------- |
-| `Something is already running on port 3000` | Another dev server is up. Accept the prompt to use 3001, or `lsof -ti:3000 \| xargs kill` |
+| `Port 3000 is in use` | Another dev server is up. Vite picks the next free port, or `lsof -ti:3000 \| xargs kill` |
 | Hospital lists are empty | Backend is down or unseeded → start it, then `make seed-dev` |
 | Everything bounces to `/login` | Token expired (8 h) or the backend restarted — just sign in again |
 | `Network Error` in the console | Backend not running on 9091, or `CORS_ORIGINS` does not include `http://localhost:3000` |
+| API calls go to `localhost:9091` in production | `VITE_API_BASE_URL` was not set **at build time**, or was still named `REACT_APP_…` |
 | `command not found: yarn` | Use `corepack yarn …`, or run `corepack enable` once |
 | Styles look unstyled | A failed install — delete `node_modules` and re-run `corepack yarn install` |
-| Stale errors after editing | Stop the server, `rm -rf node_modules/.cache`, start it again |
-
-> Deleting `node_modules/.cache` **while the dev server is running** crashes it
-> with an `ENOENT … 0.pack` error. Stop the server first.
+| Stale or impossible errors after editing | `rm -rf node_modules/.vite` and restart |
 
 ---
 
@@ -203,12 +279,18 @@ hospital screen do.
 corepack yarn build
 ```
 
-Writes an optimised, hashed bundle to `build/` (~138 kB JS + ~37 kB CSS gzipped).
-Serve it with any static host:
+Writes an optimised, hashed bundle to `build/` (~132 kB JS + ~35 kB CSS
+gzipped). Check it locally before shipping:
 
 ```bash
-npx serve -s build
+corepack yarn preview
 ```
 
 Because this is a single-page app, the host must rewrite unknown paths to
-`index.html` — otherwise refreshing on `/userdashboard` returns a 404.
+`index.html` — otherwise refreshing on `/userdashboard` returns a 404. The
+bundled `Dockerfile` and `nginx.conf` already do this:
+
+```bash
+docker build --build-arg VITE_API_BASE_URL=https://api.example.com -t lifecare-frontend .
+docker run -p 8080:80 lifecare-frontend
+```
