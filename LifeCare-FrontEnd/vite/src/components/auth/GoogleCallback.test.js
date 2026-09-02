@@ -5,9 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 import GoogleCallback from "./GoogleCallback";
 import { getAccessToken } from "../../services/httpAuth";
 
-const mockNavigate = jest.fn();
-jest.mock("react-router-dom", () => ({
-  ...jest.requireActual("react-router-dom"),
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
+vi.mock("react-router-dom", async () => ({
+  ...(await vi.importActual("react-router-dom")),
   useNavigate: () => mockNavigate,
 }));
 

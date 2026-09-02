@@ -7,15 +7,17 @@ import Login from "./Login";
 import LoginApi from "../../services/LoginApi";
 import { getAccessToken } from "../../services/httpAuth";
 
-const mockNavigate = jest.fn();
-jest.mock("react-router-dom", () => ({
-  ...jest.requireActual("react-router-dom"),
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
+vi.mock("react-router-dom", async () => ({
+  ...(await vi.importActual("react-router-dom")),
   useNavigate: () => mockNavigate,
 }));
 
-jest.mock("../../services/LoginApi");
+vi.mock("../../services/LoginApi", () => ({
+  default: { loginUser: vi.fn(), getProviders: vi.fn(), startGoogleLogin: vi.fn() },
+}));
 // Swal renders outside the tree and is not what these tests are about.
-jest.mock("sweetalert2", () => ({ fire: jest.fn() }));
+vi.mock("sweetalert2", () => ({ default: { fire: vi.fn() } }));
 
 const session = {
   id: 7,
@@ -39,7 +41,7 @@ function providersReturn(google) {
 }
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   sessionStorage.clear();
   providersReturn(false);
 });

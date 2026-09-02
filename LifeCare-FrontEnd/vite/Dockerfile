@@ -13,13 +13,11 @@ RUN yarn install --frozen-lockfile
 
 COPY . .
 
-# Create React App bakes REACT_APP_* in at build time, so the API host has to be
-# known here rather than at container start.
-ARG REACT_APP_API_BASE_URL=http://localhost:9091
-ENV REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
+# Vite bakes VITE_* in at build time, so the API host has to be known here
+# rather than at container start.
+ARG VITE_API_BASE_URL=http://localhost:9091
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
-# Treat warnings as errors, the same as CI does.
-ENV CI=true
 RUN yarn build
 
 # ---- runtime --------------------------------------------------------------
