@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import aniruddh from "../../assets/images/team1.png";
-import shubham from "../../assets/images/team2.png";
-import omkar from "../../assets/images/team3.png";
-import vaibhav from "../../assets/images/team4.png";
-import mission from "../../assets/images/doctor2.jpg";
+import aniruddh from "../../assets/images/team1.webp";
+import shubham from "../../assets/images/team2.webp";
+import omkar from "../../assets/images/team3.webp";
+import vaibhav from "../../assets/images/team4.webp";
+import mission from "../../assets/images/doctor2.webp";
 import { IconCheck, IconClock, IconHeart, IconShield, IconUsers } from "./Icons";
 
 const TEAM = [

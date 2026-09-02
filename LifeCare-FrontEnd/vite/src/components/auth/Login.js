@@ -3,7 +3,7 @@ import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
 import LoginApi from "../../services/LoginApi.js";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/images/logo.png";
+import logo from "../../assets/images/logo.webp";
 import { storeSession } from "../../services/httpAuth";
 import GoogleButton from "./GoogleButton";
 

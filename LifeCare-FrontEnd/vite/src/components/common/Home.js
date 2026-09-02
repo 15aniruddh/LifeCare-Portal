@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 
-import doctorHero from "../../assets/images/doctor1.jpg";
-import telemedicine from "../../assets/images/doctor3.jpg";
-import wellness from "../../assets/images/waitingroom.jpg";
-import testimonialImg from "../../assets/images/doctor.jpg";
+import doctorHero from "../../assets/images/doctor1.webp";
+import telemedicine from "../../assets/images/doctor3.webp";
+import wellness from "../../assets/images/waitingroom.webp";
+import testimonialImg from "../../assets/images/doctor.webp";
 
 import {
   IconAmbulance,
