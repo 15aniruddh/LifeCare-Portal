@@ -1,4 +1,3 @@
-import React from "react";
 import DashboardShell from "../common/DashboardShell";
 import { IconHospital, IconPlus, IconUsers } from "../common/Icons";
 

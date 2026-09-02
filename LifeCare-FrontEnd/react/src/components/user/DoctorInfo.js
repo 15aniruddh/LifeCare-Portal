@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import HospitalDirectory from "../common/HospitalDirectory";
 import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 import DataTable from "../common/DataTable";

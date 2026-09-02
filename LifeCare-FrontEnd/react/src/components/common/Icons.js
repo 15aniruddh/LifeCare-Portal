@@ -1,5 +1,3 @@
-import React from "react";
-
 /**
  * Inline stroke icons used across the portal.
  * They inherit colour from `currentColor` and size from the `size` prop,

@@ -1,5 +1,3 @@
-import React from "react";
-
 const TONES = {
   approved: "pill-success",
   accepted: "pill-success",

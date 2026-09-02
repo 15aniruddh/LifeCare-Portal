@@ -1,4 +1,3 @@
-import React from "react";
 import HospitalStatsPage from "../common/HospitalStatsPage";
 
 const FIELDS = [

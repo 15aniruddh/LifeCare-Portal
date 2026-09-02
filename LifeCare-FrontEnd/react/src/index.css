@@ -306,15 +306,6 @@ video {
   --bs-btn-hover-border-color: #0f6e56;
 }
 
-.btn-warning {
-  --bs-btn-color: #fff;
-  --bs-btn-bg: var(--lc-warning);
-  --bs-btn-border-color: var(--lc-warning);
-  --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #96620a;
-  --bs-btn-hover-border-color: #96620a;
-}
-
 /* Small circular arrow button, as on the reference testimonial. */
 .btn-circle {
   width: 42px;

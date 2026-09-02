@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
 import LoginApi from "../../services/LoginApi.js";

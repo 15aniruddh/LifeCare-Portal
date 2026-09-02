@@ -1,4 +1,3 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import aniruddh from "../../assets/images/team1.png";
 import shubham from "../../assets/images/team2.png";

@@ -1,5 +1,3 @@
-import React from "react";
-
 /** Google's four-colour "G", inline so the button needs no network request. */
 function GoogleMark() {
   return (

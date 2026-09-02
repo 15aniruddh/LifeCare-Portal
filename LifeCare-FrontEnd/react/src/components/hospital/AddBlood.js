@@ -1,4 +1,3 @@
-import React from "react";
 import HospitalNumbersForm from "../common/HospitalNumbersForm";
 import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 

@@ -1,4 +1,3 @@
-import React from "react";
 import HospitalDirectory from "../common/HospitalDirectory";
 import { IconOxygen } from "../common/Icons";
 

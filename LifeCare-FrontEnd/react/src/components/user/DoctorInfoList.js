@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import HospitalServiceApi from "../../services/HospitalServiceApi.js";
 import PageHeader from "../common/PageHeader";
 import DataTable from "../common/DataTable";
