@@ -673,7 +673,7 @@ in comments next to each line:
 |---|---|
 | Zip package, not a container image | ECR bills per GB-month and keeps every image you ever pushed. A zip sits in SAM's S3 bucket for cents a year |
 | Lambda Function URL, not API Gateway | API Gateway adds ~$1 per million requests on top of Lambda's own, plus its own minimums |
-| `ReservedConcurrentExecutions: 5` | The URL is public. This caps how fast anyone — an attacker, or a retry loop in the frontend — can spend money. Past 5 at once they get a 429, not a bill |
+| `ReservedConcurrentExecutions` (`MaxConcurrency`) | The URL is public. This caps how fast anyone — an attacker, or a retry loop in the frontend — can spend money. Currently **0 (unset)**: a new account's whole Lambda limit is 10 and AWS refuses any reservation that leaves fewer than 10 unreserved, so the account limit is the cap instead. Set it to 5 after a quota increase |
 | `RetentionInDays: 7` on the log group | Lambda's default is *never expire*: every access log line you ever emit is stored, and billed, forever |
 | `Architectures: [arm64]` | 20% cheaper per GB-second than x86, same code |
 | `MemorySize: 512` | You are billed memory × duration. These requests wait on Postgres, not on CPU, so more memory would cost more without finishing sooner |
@@ -701,8 +701,8 @@ in comments next to each line:
 AWS has **no hard spend cap** — the budget alarm you set up in the console
 alerts you, it does not stop anything.
 So the real question is not "can this bill me" but "how much, at worst, before I
-notice". With `MaxConcurrency: 5` and `Timeout: 15`, a public URL pegged flat out
-for a solid month tops out around **$85–110**. That is the ceiling on sustained,
+notice". With the account's concurrency limit of 10 and `Timeout: 15`, a public URL
+pegged flat out for a solid month tops out around **$170–220**. That is the ceiling on sustained,
 deliberate abuse, not an expectation: idle costs nothing, and normal portfolio
 traffic stays inside the free tier.
 
@@ -728,11 +728,10 @@ Two more worth knowing:
   mid-2025 get a credit-based free plan instead of the older perpetual
   allowances. Check **Billing → Free tier** in the console once after the first
   deploy to see which one you are on.
-* If the deploy fails with *"specified concurrent execution limit would cause
-  account limit to go below its minimum"*, your account has a low Lambda
-  concurrency quota (some new accounts start at 10 rather than 1000). Request a
-  quota increase, or remove `ReservedConcurrentExecutions` — but then the spend
-  ceiling above no longer applies.
+* This account's Lambda concurrency quota is **10**, not the usual 1000, so
+  `MaxConcurrency` is 0 (the property is omitted). Ask for an increase under
+  *Service Quotas → Lambda → Concurrent executions*; once it is granted, set
+  `MaxConcurrency=5` to get the tighter per-function cap back.
 * Deployment zips accumulate under `backend/` in the shared bucket — 18 MB per
   deploy, so a few cents a month after a hundred deploys. Prune it occasionally,
   or put an S3 lifecycle rule on that prefix. Nothing outside `backend/` is

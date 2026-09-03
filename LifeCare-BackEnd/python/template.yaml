@@ -30,19 +30,25 @@ Parameters:
     Default: http://localhost:3000
   MaxConcurrency:
     Type: Number
-    Default: 5
-    MinValue: 1
+    Default: 0
+    MinValue: 0
     Description: >
       Hard ceiling on simultaneous executions. The Function URL is public, so
-      this is the cap on how fast a bad actor - or a loop in the frontend - can
-      spend money. Excess requests get a 429 instead of a bill. Raise it when
-      real traffic needs it.
+      this caps how fast a bad actor - or a loop in the frontend - can spend
+      money; excess requests get a 429 instead of a bill.
+      0 means "do not set it", which is required on a new account: AWS refuses
+      any reservation that drops unreserved concurrency below 10, and a fresh
+      account's entire limit is 10. The account limit then serves as the cap.
+      Set this to 5 once a Lambda concurrency quota increase comes through.
   LogRetentionDays:
     Type: Number
     Default: 7
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90]
     Description: >
       Lambda's default is "never expire", which bills for stored logs forever.
+
+Conditions:
+  CapConcurrency: !Not [!Equals [!Ref MaxConcurrency, 0]]
 
 Resources:
   ApiFunction:
@@ -69,7 +75,11 @@ Resources:
       # A ceiling, not a target - you are billed for actual duration. It exists
       # so a wedged request stops at 15s instead of burning the full 15 minutes.
       Timeout: 15
-      ReservedConcurrentExecutions: !Ref MaxConcurrency
+      # Omitted entirely when MaxConcurrency is 0 - CloudFormation drops a
+      # property set to AWS::NoValue rather than sending a zero reservation,
+      # which would throttle the function to nothing.
+      ReservedConcurrentExecutions:
+        !If [CapConcurrency, !Ref MaxConcurrency, !Ref "AWS::NoValue"]
       Environment:
         Variables:
           ENV: !Ref Env
