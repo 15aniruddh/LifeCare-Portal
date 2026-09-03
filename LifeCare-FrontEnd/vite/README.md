@@ -297,7 +297,7 @@ CloudFront does this for the real deployment; see below.
 
 `template.yaml` in this folder describes the hosting setup: a CloudFront
 distribution reading the `frontend/` prefix of the shared project bucket
-(`lifecare-portal-635738234790-ap-south-2-an`) over Origin Access Control. The
+(`lifecare-portal-artifacts-635738234790`) over Origin Access Control. The
 bucket stays private — nothing is served except through the CDN.
 
 The stack does **not** create the bucket; it only attaches a policy and points
@@ -322,7 +322,7 @@ to `master` that touches `LifeCare-FrontEnd/vite/**`. Backend-only and
 documentation-only pushes do not trigger it.
 
 Each run: `yarn test` → create/update the stack → `yarn build` → sync to
-`s3://lifecare-portal-635738234790-ap-south-2-an/frontend/` → invalidate the CDN.
+`s3://lifecare-portal-artifacts-635738234790/frontend/` → invalidate the CDN.
 The sync's `--delete` is scoped to that prefix, so the backend's artifacts in the
 same bucket are never touched.
 
@@ -336,10 +336,10 @@ plus these repository variables:
 | Kind | Name | Value |
 |---|---|---|
 | Variable | `FRONTEND_STACK_NAME` | `lifecare-web` |
-| Variable | `ARTIFACT_BUCKET` | `lifecare-portal-635738234790-ap-south-2-an` (shared with the backend) |
+| Variable | `ARTIFACT_BUCKET` | `lifecare-portal-artifacts-635738234790` (shared with the backend) |
 | Variable | `VITE_API_BASE_URL` | the backend's Lambda Function URL, no trailing slash |
 
-`AWS_REGION` must be `ap-south-2`: the origin hostname is built from the stack's
+`AWS_REGION` must be `ap-south-1`: the origin hostname is built from the stack's
 region, so the stack has to sit where the bucket does.
 
 `VITE_API_BASE_URL` is read at **build time** — Vite inlines it into the bundle.
@@ -368,7 +368,7 @@ the files in place. Remove them separately if you want to:
 
 ```bash
 aws cloudformation delete-stack --stack-name lifecare-web
-aws s3 rm s3://lifecare-portal-635738234790-ap-south-2-an/frontend --recursive
+aws s3 rm s3://lifecare-portal-artifacts-635738234790/frontend --recursive
 ```
 
 Disabling and removing a CloudFront distribution takes AWS several minutes; the

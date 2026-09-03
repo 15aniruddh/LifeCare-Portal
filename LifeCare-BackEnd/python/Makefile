@@ -64,7 +64,7 @@ sam-build: ## Build the Lambda deployment package
 
 # Same bucket and prefix CI uses, so a manual deploy cannot strand artifacts
 # somewhere the deploy role has no permission to clean up.
-ARTIFACT_BUCKET ?= lifecare-portal-635738234790-ap-south-2-an
+ARTIFACT_BUCKET ?= lifecare-portal-artifacts-635738234790
 
 sam-deploy: ## Deploy to AWS Lambda (first run: prompts for the parameters)
 	sam deploy --guided --s3-bucket $(ARTIFACT_BUCKET) --s3-prefix backend

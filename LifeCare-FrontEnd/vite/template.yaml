@@ -9,7 +9,7 @@ Description: >
 Parameters:
   SiteBucket:
     Type: String
-    Default: lifecare-portal-635738234790-ap-south-2-an
+    Default: lifecare-portal-artifacts-635738234790
     Description: >
       The shared bucket. This stack does not create it - it only attaches a
       policy and points CloudFront at it. Must live in the same region as this

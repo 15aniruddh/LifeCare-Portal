@@ -537,7 +537,7 @@ make sam-deploy
 
 Both go to the shared project bucket under the `backend/` prefix. SAM requires
 that bucket to be in the **same region as the stack**, so deploy into
-`ap-south-2` — the region the bucket lives in.
+`ap-south-1` — the region the bucket lives in.
 
 `sam deploy --guided` asks for:
 
@@ -579,11 +579,11 @@ the tests fail nothing reaches AWS at all.
 
 #### The shared bucket
 
-Both pipelines write to one bucket, `lifecare-portal-635738234790-ap-south-2-an`,
+Both pipelines write to one bucket, `lifecare-portal-artifacts-635738234790`,
 split by prefix:
 
 ```
-lifecare-portal-635738234790-ap-south-2-an/
+lifecare-portal-artifacts-635738234790/
 ├── backend/     # Lambda deployment zips, uploaded by sam deploy
 └── frontend/    # the built Vite site, served by CloudFront
 ```
@@ -595,7 +595,7 @@ S3 permissions are scoped per prefix as well, so neither pipeline can write into
 the other's folder even by accident.
 
 Because SAM needs its artifact bucket in the stack's own region, **every stack
-here deploys to `ap-south-2`**.
+here deploys to `ap-south-1`**.
 
 #### One-time setup
 
@@ -609,7 +609,7 @@ aws cloudformation deploy \
   --stack-name lifecare-api-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides GitHubRepo=15aniruddh/LifeCare-Portal DeployBranch=master \
-                        ArtifactBucket=lifecare-portal-635738234790-ap-south-2-an
+                        ArtifactBucket=lifecare-portal-artifacts-635738234790
 
 aws cloudformation describe-stacks --stack-name lifecare-api-cicd \
   --query 'Stacks[0].Outputs[0].OutputValue' --output text
@@ -630,8 +630,8 @@ request — including one from a fork — cannot reach AWS.
 | Secret | `DATABASE_URL` | your Neon connection string |
 | Secret | `APP_SECRET_KEY` | `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` |
 | Variable | `AWS_DEPLOY_ROLE_ARN` | the ARN printed above |
-| Variable | `AWS_REGION` | `ap-south-2` — must match the artifact bucket's region |
-| Variable | `ARTIFACT_BUCKET` | `lifecare-portal-635738234790-ap-south-2-an` |
+| Variable | `AWS_REGION` | `ap-south-1` — must match the artifact bucket's region |
+| Variable | `ARTIFACT_BUCKET` | `lifecare-portal-artifacts-635738234790` |
 | Variable | `STACK_NAME` | `lifecare-api` |
 | Variable | `APP_ENV` | `production` (use `dev` until the frontend has a real URL) |
 | Variable | `CORS_ORIGINS` | your frontend origin |

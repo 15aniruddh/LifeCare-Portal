@@ -31,7 +31,7 @@ Parameters:
     Description: The CloudFront stack. Must match FRONTEND_STACK_NAME in the workflow.
   ArtifactBucket:
     Type: String
-    Default: lifecare-portal-635738234790-ap-south-2-an
+    Default: lifecare-portal-artifacts-635738234790
     Description: >
       The one bucket both pipelines use: Lambda deployment zips under backend/,
       the built site under frontend/. Nothing here may touch any other bucket.

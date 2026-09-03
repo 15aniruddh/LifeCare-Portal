@@ -80,6 +80,11 @@ Resources:
           LOG_JSON: "true"
       # A Function URL is free; API Gateway would add ~$1 per million requests
       # and a REST API's minimum charges on top of Lambda's own.
+      # This is why the stack lives in ap-south-1 (Mumbai) and not ap-south-2
+      # (Hyderabad): Function URLs do not exist in ap-south-2 - the Lambda API
+      # there has no GetFunctionUrlConfig operation, and CloudFormation has no
+      # AWS::Lambda::Url resource type. Moving the region back means paying for
+      # API Gateway.
       # CORS is handled by the app's own middleware, so none is configured here -
       # two layers would emit duplicate Access-Control-Allow-Origin headers.
       FunctionUrlConfig:
