@@ -40,7 +40,10 @@ jobs:
     needs: test
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    environment: production
+    # No `environment:` here on purpose. Declaring one rewrites the OIDC subject
+    # claim from repo:OWNER/REPO:ref:refs/heads/master to
+    # repo:OWNER/REPO:environment:<name>, which no longer matches the branch
+    # condition github-oidc.yaml pins the role to.
     permissions:
       id-token: write
       contents: read
