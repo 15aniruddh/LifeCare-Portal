@@ -786,3 +786,143 @@
   line-height: 1.5;
 }
 
+
+/* --------------------------------------------------------------------------
+   SweetAlert2 dialogs
+
+   There are 27 Swal.fire() call sites across the app, all using the library's
+   stock look — Roboto-ish type, square-ish corners, a flat blue button — which
+   reads as a bolted-on component next to the rest of the UI. Restyling them at
+   the source would mean editing every call site and remembering to do it again
+   on the next one, so the theme lives here instead: the dialogs inherit the
+   project's tokens and any new Swal.fire() is styled the moment it is written.
+   -------------------------------------------------------------------------- */
+
+.swal2-popup {
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, sans-serif;
+  border-radius: var(--lc-radius-lg);
+  border: 1px solid var(--lc-line);
+  box-shadow: var(--lc-shadow-lg);
+  padding: 2rem 1.75rem 1.5rem;
+  background: var(--lc-surface);
+}
+
+.swal2-title {
+  color: var(--lc-ink);
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  padding: 0;
+}
+
+.swal2-html-container {
+  color: var(--lc-body);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin-top: 0.6rem;
+}
+
+/* The stock icons are outsized and use their own palette. Shrink them and
+   recolour to the project's semantic tokens. */
+.swal2-icon {
+  width: 4rem;
+  height: 4rem;
+  margin: 0.5rem auto 1rem;
+  border-width: 3px;
+}
+
+.swal2-icon .swal2-icon-content {
+  font-size: 2.4rem;
+}
+
+.swal2-icon.swal2-error {
+  border-color: var(--lc-danger);
+  color: var(--lc-danger);
+  background: var(--lc-danger-soft);
+}
+
+.swal2-icon.swal2-error [class^="swal2-x-mark-line"] {
+  background-color: var(--lc-danger);
+}
+
+.swal2-icon.swal2-success {
+  border-color: var(--lc-success);
+  color: var(--lc-success);
+  background: var(--lc-success-soft);
+}
+
+.swal2-icon.swal2-success [class^="swal2-success-line"] {
+  background-color: var(--lc-success);
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: var(--lc-success);
+}
+
+.swal2-icon.swal2-warning {
+  border-color: var(--lc-warning);
+  color: var(--lc-warning);
+  background: var(--lc-warning-soft);
+}
+
+.swal2-icon.swal2-info,
+.swal2-icon.swal2-question {
+  border-color: var(--lc-violet);
+  color: var(--lc-violet);
+  background: var(--lc-violet-soft);
+}
+
+/* Buttons: pill-shaped and violet, matching .btn-primary elsewhere. */
+.swal2-actions {
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.swal2-styled.swal2-confirm,
+.swal2-styled.swal2-deny,
+.swal2-styled.swal2-cancel {
+  border-radius: var(--lc-radius-pill);
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 0.6rem 1.6rem;
+  box-shadow: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.swal2-styled.swal2-confirm {
+  background-color: var(--lc-violet);
+  color: #fff;
+}
+
+.swal2-styled.swal2-confirm:hover {
+  background-color: var(--lc-violet-dark);
+}
+
+.swal2-styled.swal2-cancel {
+  background-color: var(--lc-panel);
+  color: var(--lc-body);
+}
+
+.swal2-styled.swal2-cancel:hover {
+  background-color: var(--lc-line);
+}
+
+.swal2-styled.swal2-deny {
+  background-color: var(--lc-danger);
+  color: #fff;
+}
+
+/* Bootstrap and SweetAlert2 both draw focus rings; keep the project's. */
+.swal2-styled:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.14);
+}
+
+.swal2-container {
+  backdrop-filter: blur(2px);
+}
+
+.swal2-container.swal2-backdrop-show {
+  background: rgba(23, 23, 58, 0.45);
+}
