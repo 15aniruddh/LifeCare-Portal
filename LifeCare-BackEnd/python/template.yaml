@@ -40,6 +40,28 @@ Parameters:
       any reservation that drops unreserved concurrency below 10, and a fresh
       account's entire limit is 10. The account limit then serves as the cap.
       Set this to 5 once a Lambda concurrency quota increase comes through.
+  GoogleClientId:
+    Type: String
+    Default: ""
+    Description: >
+      OAuth 2.0 Web application client ID from the Google Cloud console. Not a
+      secret - it travels in the authorisation URL the browser follows.
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: >
+      The matching client secret. This stays server-side: it is exchanged for
+      tokens by the Lambda and must never reach the browser bundle.
+  GoogleRedirectUri:
+    Type: String
+    Default: ""
+    Description: >
+      Must equal an "Authorised redirect URI" registered on that Google client,
+      character for character, and must be this API's own callback -
+      <function url>/login/google/callback. It cannot be derived from the
+      Function URL inside this template: the URL is created from the function,
+      so referencing it here would be a circular dependency.
   AlertEmail:
     Type: String
     Default: ""
@@ -65,6 +87,12 @@ Parameters:
 Conditions:
   CapConcurrency: !Not [!Equals [!Ref MaxConcurrency, 0]]
   Guarded: !Not [!Equals [!Ref AlertEmail, ""]]
+  # All three must be present. Half-configured Google sign-in makes the app
+  # refuse to start, by design (see Settings.validate_for_runtime).
+  GoogleReady: !And
+    - !Not [!Equals [!Ref GoogleClientId, ""]]
+    - !Not [!Equals [!Ref GoogleClientSecret, ""]]
+    - !Not [!Equals [!Ref GoogleRedirectUri, ""]]
 
 Resources:
   ApiFunction:
@@ -104,6 +132,12 @@ Resources:
           CORS_ORIGINS: !Ref CorsOrigins
           FRONTEND_BASE_URL: !Ref FrontendBaseUrl
           LOG_JSON: "true"
+          # The login page asks GET /login/providers whether to render the
+          # Google button; it stays hidden until all three values arrive here.
+          GOOGLE_OAUTH_ENABLED: !If [GoogleReady, "true", "false"]
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
       # A Function URL is free; API Gateway would add ~$1 per million requests
       # and a REST API's minimum charges on top of Lambda's own.
       # This is why the stack lives in ap-south-1 (Mumbai) and not ap-south-2
@@ -252,6 +286,12 @@ Resources:
       Endpoint: !GetAtt Throttler.Arn
 
 Outputs:
+  GoogleSignIn:
+    Description: Whether the login page will show the Google button.
+    Value: !If [GoogleReady, "enabled", "OFF - set the GoogleClient* parameters"]
+  GoogleCallbackToRegister:
+    Description: Register this exact URL in the Google console's Authorised redirect URIs.
+    Value: !Sub ["${u}login/google/callback", {u: !GetAtt ApiFunctionUrl.FunctionUrl}]
   GuardrailStatus:
     Description: Whether the abuse guardrails are active.
     Value: !If [Guarded, "armed", "OFF - set AlertEmail to enable"]

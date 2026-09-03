@@ -95,6 +95,11 @@ jobs:
       - name: Deploy
         env:
           ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          # A secret, not a variable: variables are readable by anyone who can
+          # see the repository settings, and this one buys account access.
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ vars.GOOGLE_REDIRECT_URI }}
         run: |
           params=(
             Env="${{ vars.APP_ENV }}"
@@ -108,6 +113,15 @@ jobs:
           # and the stack still deploys, just without the alarm and throttler.
           if [ -n "$ALERT_EMAIL" ]; then
             params+=(AlertEmail="$ALERT_EMAIL")
+          fi
+          # Same reason - SAM rejects an empty value, and Google sign-in is
+          # all-or-nothing, so pass the trio only when all three are present.
+          if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$GOOGLE_REDIRECT_URI" ]; then
+            params+=(
+              GoogleClientId="$GOOGLE_CLIENT_ID"
+              GoogleClientSecret="$GOOGLE_CLIENT_SECRET"
+              GoogleRedirectUri="$GOOGLE_REDIRECT_URI"
+            )
           fi
 
           sam deploy \
