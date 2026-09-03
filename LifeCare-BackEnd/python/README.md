@@ -68,7 +68,9 @@ python/
 ## Running the backend — step by step
 
 Prerequisites: **Python 3.11+** (developed on 3.13) and a PostgreSQL database.
-The project currently points at a hosted **Neon** database, so Docker is
+The project currently points at a hosted **Neon** database in
+**ap-southeast-1 (Singapore)** — deliberately the region nearest the Lambda in
+ap-south-1, because every query crosses that gap. Docker is
 optional — see [Option B](#option-b--local-postgres-in-docker) if you would
 rather run Postgres locally.
 
@@ -696,6 +698,24 @@ in comments next to each line:
    browser to call the API, so the URL is world-reachable by design; the JWT is
    what protects the data, not the network. `MaxConcurrency` is what protects the
    wallet. Do not raise it without a reason.
+
+### Keep the database near the Lambda
+
+Every request makes roughly three round trips to Postgres — the pool pre-ping,
+the query, and the commit — so the distance between the function and the
+database sets the floor on response time. Measured on this deployment:
+
+| Neon region | `/health/ready` | `/hospital/all` |
+|---|---|---|
+| us-east-2 (Ohio) | 1.42s | 1.80s |
+| ap-southeast-1 (Singapore) | see below | see below |
+
+Neon has no Mumbai region, so Singapore is the closest available. If that ever
+changes, moving is cheap: create the project in the new region, point
+`DATABASE_URL` at it, and let CI run `alembic upgrade head`. Copy existing rows
+parents-first (`hospitals`, `users`, `admins`, `doctor_info`, `requests`) and
+reset each identity sequence past the highest id, or the next insert collides on
+the primary key.
 
 ### If someone points a script at it
 
