@@ -93,7 +93,23 @@ jobs:
       - run: sam build --use-container
 
       - name: Deploy
+        env:
+          ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
         run: |
+          params=(
+            Env="${{ vars.APP_ENV }}"
+            DatabaseUrl="${{ secrets.DATABASE_URL }}"
+            SecretKey="${{ secrets.APP_SECRET_KEY }}"
+            CorsOrigins="${{ vars.CORS_ORIGINS }}"
+            FrontendBaseUrl="${{ vars.FRONTEND_BASE_URL }}"
+          )
+          # SAM rejects `Key=` with an empty value outright, so the guardrail
+          # parameter is only passed when ALERT_EMAIL is actually set. Unset it
+          # and the stack still deploys, just without the alarm and throttler.
+          if [ -n "$ALERT_EMAIL" ]; then
+            params+=(AlertEmail="$ALERT_EMAIL")
+          fi
+
           sam deploy \
             --stack-name "${{ vars.STACK_NAME }}" \
             --region "${{ env.AWS_REGION }}" \
@@ -102,13 +118,7 @@ jobs:
             --s3-prefix backend \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --parameter-overrides \
-              Env="${{ vars.APP_ENV }}" \
-              DatabaseUrl="${{ secrets.DATABASE_URL }}" \
-              SecretKey="${{ secrets.APP_SECRET_KEY }}" \
-              CorsOrigins="${{ vars.CORS_ORIGINS }}" \
-              FrontendBaseUrl="${{ vars.FRONTEND_BASE_URL }}" \
-              AlertEmail="${{ vars.ALERT_EMAIL }}"
+            --parameter-overrides "${params[@]}"
 
       - name: Show the API URL and check it answers
         run: |
