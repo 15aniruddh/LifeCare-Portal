@@ -40,6 +40,21 @@ Parameters:
       any reservation that drops unreserved concurrency below 10, and a fresh
       account's entire limit is 10. The account limit then serves as the cap.
       Set this to 5 once a Lambda concurrency quota increase comes through.
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: >
+      Turns on the abuse guardrails below. Leave empty to deploy without them.
+      You must click the confirmation link SNS emails you, or no alert is
+      delivered and the auto-throttle still fires silently.
+  InvocationAlarmThreshold:
+    Type: Number
+    Default: 3000
+    Description: >
+      Invocations in 5 minutes that count as an attack. The account's
+      concurrency limit of 10 caps real throughput near 15,000 per 5 minutes,
+      and ordinary personal use is a few hundred per day, so 3000 is far above
+      anything legitimate and far below anything expensive.
   LogRetentionDays:
     Type: Number
     Default: 7
@@ -49,6 +64,7 @@ Parameters:
 
 Conditions:
   CapConcurrency: !Not [!Equals [!Ref MaxConcurrency, 0]]
+  Guarded: !Not [!Equals [!Ref AlertEmail, ""]]
 
 Resources:
   ApiFunction:
@@ -108,7 +124,137 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${ApiFunction}"
       RetentionInDays: !Ref LogRetentionDays
 
+  # ---- Abuse guardrails ------------------------------------------------
+  # The Function URL is public and AWS has no hard spend cap, so the answer to
+  # "someone points a script at it" is: notice within 5 minutes, and throttle
+  # the function to zero without waiting for a human. Every resource here is
+  # inside a free tier - 10 CloudWatch alarms, 1,000 SNS emails a month, and a
+  # throttler that only ever runs during an actual incident.
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Condition: Guarded
+    Properties:
+      DisplayName: LifeCare API alarms
+
+  AlertSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: Guarded
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  InvocationSpikeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: Guarded
+    Properties:
+      AlarmDescription: Invocation rate far above anything this project generates.
+      Namespace: AWS/Lambda
+      MetricName: Invocations
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ApiFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: !Ref InvocationAlarmThreshold
+      ComparisonOperator: GreaterThanThreshold
+      # Missing data means no traffic at all, which is the normal resting state.
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+
+  ThrottlerRole:
+    Type: AWS::IAM::Role
+    Condition: Guarded
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: throttle-the-api
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Exactly one verb on exactly one function. This role cannot read
+              # data, invoke anything, or touch any other resource.
+              - Effect: Allow
+                Action: lambda:PutFunctionConcurrency
+                Resource: !GetAtt ApiFunction.Arn
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+
+  Throttler:
+    Type: AWS::Lambda::Function
+    Condition: Guarded
+    Properties:
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: index.handler
+      Role: !GetAtt ThrottlerRole.Arn
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          TARGET_FUNCTION: !Ref ApiFunction
+      Code:
+        ZipFile: |
+          """Sets the API's reserved concurrency to 0, which stops every new
+          invocation immediately. Reserving 0 is permitted even on an account
+          whose whole concurrency limit is 10, unlike reserving a positive
+          number - so this works today, without a quota increase.
+
+          Recover with:
+            aws lambda delete-function-concurrency --function-name <fn>
+          """
+          import os
+          import boto3
+
+          def handler(event, context):
+              target = os.environ["TARGET_FUNCTION"]
+              boto3.client("lambda").put_function_concurrency(
+                  FunctionName=target,
+                  ReservedConcurrentExecutions=0,
+              )
+              print(f"Throttled {target} to zero concurrency")
+              return {"throttled": target}
+
+  ThrottlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: Guarded
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${Throttler}"
+      RetentionInDays: !Ref LogRetentionDays
+
+  ThrottlerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: Guarded
+    Properties:
+      FunctionName: !GetAtt Throttler.Arn
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref AlertTopic
+
+  # SNS fans the alarm out to both the email and the throttler. SNS retries a
+  # failed Lambda delivery with backoff, which matters here: under a real flood
+  # the throttler is competing for the same account concurrency pool as the API.
+  ThrottlerSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: Guarded
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: lambda
+      Endpoint: !GetAtt Throttler.Arn
+
 Outputs:
+  GuardrailStatus:
+    Description: Whether the abuse guardrails are active.
+    Value: !If [Guarded, "armed", "OFF - set AlertEmail to enable"]
   ApiUrl:
     Description: Base URL of the API. Point the frontend's API base URL here.
     Value: !GetAtt ApiFunctionUrl.FunctionUrl

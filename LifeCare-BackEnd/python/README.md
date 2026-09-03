@@ -635,6 +635,7 @@ request — including one from a fork — cannot reach AWS.
 | Variable | `STACK_NAME` | `lifecare-api` |
 | Variable | `APP_ENV` | `production` (use `dev` until the frontend has a real URL) |
 | Variable | `CORS_ORIGINS` | your frontend origin |
+| Variable | `ALERT_EMAIL` | where abuse alarms go — also arms the auto-throttle |
 | Variable | `FRONTEND_BASE_URL` | your frontend origin |
 
 Secrets are write-only and masked in logs; variables are visible, which is why
@@ -695,6 +696,79 @@ in comments next to each line:
    browser to call the API, so the URL is world-reachable by design; the JWT is
    what protects the data, not the network. `MaxConcurrency` is what protects the
    wallet. Do not raise it without a reason.
+
+### If someone points a script at it
+
+The Function URL and the CDN are both public by design — the JWT protects the
+data, not the wallet. Since AWS has no hard spend cap, the defence is layered:
+make abuse cheap, notice it fast, and stop it without waiting for a human.
+
+**1. The account's concurrency limit of 10 is a feature, not a bug.**
+Lambda cannot run more than 10 of anything at once in this account, which caps
+the burn rate no matter how hard the URL is hit. Do **not** request a quota
+increase to "fix" `MaxConcurrency` — raising the limit to 1000 without also
+setting a reservation makes the ceiling a hundred times worse. If you ever do
+need the increase for real traffic, set `MaxConcurrency=5` in the *same* change.
+
+**2. An alarm fires within 5 minutes.** `InvocationSpikeAlarm` watches Lambda
+invocations and trips above `InvocationAlarmThreshold` (3,000 per 5 minutes).
+Real usage here is a few hundred a day, and the concurrency cap puts the
+physical ceiling near 15,000 per 5 minutes, so the threshold sits far above
+anything legitimate and far below anything expensive.
+
+**3. The API throttles itself.** The alarm publishes to an SNS topic with two
+subscribers: your email, and a small `Throttler` Lambda that sets the API's
+reserved concurrency to **0**. That stops every new invocation instantly. It
+needs no human and no quota increase — reserving *zero* is allowed even on an
+account whose entire limit is 10, unlike reserving a positive number.
+
+The throttler's IAM role can call exactly one API, `lambda:PutFunctionConcurrency`,
+on exactly one function. It cannot read data or invoke anything.
+
+Enable it by setting the `ALERT_EMAIL` repository variable, then **click the
+confirmation link SNS sends you** — an unconfirmed subscription means no email,
+though the auto-throttle still fires.
+
+```bash
+gh variable set ALERT_EMAIL --body you@example.com
+```
+
+`GuardrailStatus` in the stack outputs reports `armed` or `OFF`.
+
+**Recovering after a throttle.** The API returns errors until you clear it:
+
+```bash
+aws lambda delete-function-concurrency \
+  --function-name $(aws cloudformation describe-stack-resource \
+      --stack-name lifecare-api --logical-resource-id ApiFunction \
+      --region ap-south-1 --query 'StackResourceDetail.PhysicalResourceId' --output text) \
+  --region ap-south-1
+```
+
+**The manual switches**, if you want to pull them yourself:
+
+```bash
+# Stop the API instantly (same thing the throttler does)
+aws lambda put-function-concurrency --function-name <fn> \
+  --reserved-concurrent-executions 0 --region ap-south-1
+
+# Take the site offline — disabling is reversible, deleting is not
+aws cloudfront get-distribution-config --id <id> > d.json   # then set Enabled:false
+aws cloudfront update-distribution --id <id> --if-match <etag> --distribution-config file://...
+```
+
+**What is deliberately *not* here:** AWS WAF. It is the usual answer to this
+question and it would bill **$5/month base plus $0.60 per million requests**,
+every month, forever — to guard against an attack that has not happened. The
+alarm-plus-throttle above costs nothing at rest and is enough for a personal
+project. Revisit WAF only if this ever carries real traffic.
+
+**The CDN side.** CloudFront's free tier is 1 TB/month out and 10M requests;
+the built site is about 200 kB, so exhausting that takes roughly five million
+page loads. It is the far less likely money sink, and your account budget alarm
+catches it. A CloudWatch alarm on CloudFront metrics is possible but must live
+in **us-east-1** — CloudFront publishes its metrics only there — which is why
+it is not in this stack.
 
 ### The honest ceiling
 

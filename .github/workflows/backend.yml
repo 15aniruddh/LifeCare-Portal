@@ -107,7 +107,8 @@ jobs:
               DatabaseUrl="${{ secrets.DATABASE_URL }}" \
               SecretKey="${{ secrets.APP_SECRET_KEY }}" \
               CorsOrigins="${{ vars.CORS_ORIGINS }}" \
-              FrontendBaseUrl="${{ vars.FRONTEND_BASE_URL }}"
+              FrontendBaseUrl="${{ vars.FRONTEND_BASE_URL }}" \
+              AlertEmail="${{ vars.ALERT_EMAIL }}"
 
       - name: Show the API URL and check it answers
         run: |
