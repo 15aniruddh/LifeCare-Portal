@@ -23,6 +23,15 @@ defaults:
 
 # Two pushes in quick succession would otherwise race each other into the same
 # CloudFormation stack. Never cancel a deploy mid-flight, only a queued one.
+# ap-south-1 (Mumbai) is not a preference, it is a requirement: Lambda Function
+# URLs do not exist in ap-south-2 (Hyderabad), and the CloudFront origin hostname
+# is built from the stack's own region. The `||` default means a missing or
+# deleted AWS_REGION variable still lands in Mumbai instead of failing or, worse,
+# deploying somewhere else.
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+  ARTIFACT_BUCKET: ${{ vars.ARTIFACT_BUCKET || 'lifecare-portal-artifacts-635738234790' }}
+
 concurrency:
   group: backend-deploy
   cancel-in-progress: false
@@ -64,7 +73,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       # The function is built for arm64 but GitHub's free runners are x86, so
       # `sam build --use-container` needs emulation to run the arm64 build image.
@@ -87,9 +96,9 @@ jobs:
         run: |
           sam deploy \
             --stack-name "${{ vars.STACK_NAME }}" \
-            --region "${{ vars.AWS_REGION }}" \
+            --region "${{ env.AWS_REGION }}" \
             --capabilities CAPABILITY_IAM \
-            --s3-bucket "${{ vars.ARTIFACT_BUCKET }}" \
+            --s3-bucket "${{ env.ARTIFACT_BUCKET }}" \
             --s3-prefix backend \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
@@ -104,7 +113,7 @@ jobs:
         run: |
           URL=$(aws cloudformation describe-stacks \
             --stack-name "${{ vars.STACK_NAME }}" \
-            --region "${{ vars.AWS_REGION }}" \
+            --region "${{ env.AWS_REGION }}" \
             --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
             --output text)
           echo "API: $URL"

@@ -65,9 +65,11 @@ sam-build: ## Build the Lambda deployment package
 # Same bucket and prefix CI uses, so a manual deploy cannot strand artifacts
 # somewhere the deploy role has no permission to clean up.
 ARTIFACT_BUCKET ?= lifecare-portal-artifacts-635738234790
+# Mumbai, not a preference: Lambda Function URLs do not exist in ap-south-2.
+AWS_REGION ?= ap-south-1
 
 sam-deploy: ## Deploy to AWS Lambda (first run: prompts for the parameters)
-	sam deploy --guided --s3-bucket $(ARTIFACT_BUCKET) --s3-prefix backend
+	sam deploy --guided --region $(AWS_REGION) --s3-bucket $(ARTIFACT_BUCKET) --s3-prefix backend
 
 # Called by `sam build` inside the Lambda build image, not by hand. The target
 # name must stay in sync with the ApiFunction logical id in template.yaml.

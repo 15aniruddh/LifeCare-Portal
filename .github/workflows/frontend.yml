@@ -19,6 +19,15 @@ defaults:
   run:
     working-directory: LifeCare-FrontEnd/vite
 
+# ap-south-1 (Mumbai) is not a preference, it is a requirement: Lambda Function
+# URLs do not exist in ap-south-2 (Hyderabad), and the CloudFront origin hostname
+# is built from the stack's own region. The `||` default means a missing or
+# deleted AWS_REGION variable still lands in Mumbai instead of failing or, worse,
+# deploying somewhere else.
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+  ARTIFACT_BUCKET: ${{ vars.ARTIFACT_BUCKET || 'lifecare-portal-artifacts-635738234790' }}
+
 concurrency:
   group: frontend-deploy
   cancel-in-progress: false
@@ -57,7 +66,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       # The bucket and distribution are described in template.yaml next to this
       # project. Creating the distribution takes ~10 minutes the first time;
@@ -69,7 +78,7 @@ jobs:
             --stack-name "${{ vars.FRONTEND_STACK_NAME }}" \
             --no-fail-on-empty-changeset \
             --parameter-overrides \
-              SiteBucket="${{ vars.ARTIFACT_BUCKET }}" \
+              SiteBucket="${{ env.ARTIFACT_BUCKET }}" \
               SitePrefix=frontend
 
       - name: Read the stack outputs
@@ -100,7 +109,7 @@ jobs:
       # artifacts in the same bucket are never touched.
       - name: Upload
         env:
-          DEST: s3://${{ vars.ARTIFACT_BUCKET }}/frontend
+          DEST: s3://${{ env.ARTIFACT_BUCKET }}/frontend
         run: |
           aws s3 sync build/ "$DEST/" \
             --delete --exclude index.html --cache-control "public,max-age=31536000,immutable"
